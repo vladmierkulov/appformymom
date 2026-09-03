@@ -7,26 +7,31 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: var(--tg-theme-bg-color, #f4f4f7);
+      --bg: var(--tg-theme-bg-color, #f8fafc);
       --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #1c1c1e);
-      --hint: var(--tg-theme-hint-color, #8e8e93);
-      --primary: var(--tg-theme-button-color, #007aff);
+      --text: var(--tg-theme-text-color, #0f172a);
+      --hint: var(--tg-theme-hint-color, #64748b);
+      --primary: var(--tg-theme-button-color, #6366f1);
+      --primary-grad: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       --primary-text: var(--tg-theme-button-text-color, #ffffff);
-      --success: #34c759;
-      --danger: #ff3b30;
-      --radius: 14px;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 16px;
+      --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 10px 25px -5px rgba(99, 102, 241, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     }
 
     * {
       box-sizing: border-box;
       margin: 0; padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
     body {
       background-color: var(--bg);
+      background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
       color: var(--text);
       display: flex;
       flex-direction: column;
@@ -35,37 +40,49 @@
     }
 
     .app-header {
-      background: var(--card-bg);
-      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 14px 16px;
       text-align: center;
       font-weight: 700;
-      font-size: 18px;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
+      font-size: 17px;
+      letter-spacing: -0.3px;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 90;
     }
 
     .cloud-status {
       font-size: 11px;
-      font-weight: 400;
+      font-weight: 600;
       color: var(--success);
-      display: block;
-      margin-top: 2px;
+      display: inline-block;
+      margin-top: 4px;
+      padding: 3px 10px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 20px;
     }
 
     .app-content {
       flex: 1;
       overflow-y: auto;
-      padding: 14px;
-      padding-bottom: 80px;
+      padding: 16px;
+      padding-bottom: 85px;
     }
 
     .tab-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      height: 60px;
-      background: var(--card-bg);
+      height: 64px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       display: flex;
-      border-top: 1px solid rgba(0,0,0,0.08);
+      border-top: 1px solid rgba(226, 232, 240, 0.8);
       z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
     }
 
     .tab-item {
@@ -74,33 +91,38 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 11px;
+      font-weight: 500;
       color: var(--hint);
       cursor: pointer;
       gap: 3px;
+      transition: all 0.2s ease;
     }
 
     .tab-item.active {
       color: var(--primary);
-      font-weight: 600;
+      font-weight: 700;
+      transform: translateY(-1px);
     }
 
-    .tab-item .icon { font-size: 18px; }
+    .tab-item .icon { font-size: 19px; }
 
     .card {
       background: var(--card-bg);
-      padding: 14px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      padding: 16px;
       border-radius: var(--radius);
-      margin-bottom: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
     }
 
     .card-title {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--hint);
       text-transform: uppercase;
-      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -117,87 +139,118 @@
 
     .day-chip {
       flex: 0 0 58px;
-      padding: 8px 0;
-      background: var(--bg);
-      border-radius: 12px;
+      padding: 10px 0;
+      background: rgba(241, 245, 249, 0.8);
+      border-radius: 14px;
       text-align: center;
       cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
     }
 
     .day-chip.selected {
-      background: var(--primary);
-      color: var(--primary-text);
+      background: var(--primary-grad);
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+      transform: translateY(-2px);
     }
 
-    .day-chip .wk { font-size: 10px; text-transform: uppercase; opacity: 0.8; }
-    .day-chip .num { font-size: 16px; font-weight: 700; margin: 2px 0; }
+    .day-chip .wk { font-size: 10px; text-transform: uppercase; opacity: 0.8; font-weight: 600; }
+    .day-chip .num { font-size: 17px; font-weight: 800; margin: 2px 0; }
 
     .list-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px;
-      background: var(--bg);
-      border-radius: 10px;
+      padding: 13px 14px;
+      background: rgba(248, 250, 252, 0.9);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 12px;
       margin-bottom: 8px;
+      transition: transform 0.15s ease;
     }
 
     .delete-btn {
-      background: none;
+      background: rgba(239, 68, 68, 0.1);
       border: none;
       color: var(--danger);
-      font-size: 18px;
+      font-size: 14px;
       font-weight: bold;
-      padding: 4px 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       margin-left: 8px;
+      transition: background 0.2s;
     }
+    .delete-btn:active { background: rgba(239, 68, 68, 0.25); }
 
     .input-field, select {
       width: 100%;
-      padding: 12px;
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 10px;
-      background: var(--bg);
+      padding: 13px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
       color: var(--text);
       font-size: 15px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-field:focus, select:focus {
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
 
     .btn {
       width: 100%;
-      padding: 13px;
+      padding: 14px;
       border: none;
       border-radius: var(--radius);
-      background: var(--primary);
+      background: var(--primary-grad);
       color: var(--primary-text);
       font-weight: 600;
       font-size: 15px;
       cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
     }
 
     .btn-secondary {
-      background: rgba(0,122,255,0.1);
+      background: rgba(99, 102, 241, 0.08);
       color: var(--primary);
+      box-shadow: none;
     }
+    .btn-secondary:active { background: rgba(99, 102, 241, 0.16); }
 
     .btn-sm {
-      padding: 6px 12px;
+      padding: 7px 14px;
       font-size: 12px;
+      border-radius: 20px;
       width: auto;
     }
 
     .modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
       display: flex;
       align-items: flex-end;
       z-index: 200;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.25s ease;
     }
 
     .modal.open {
@@ -208,11 +261,18 @@
     .modal-content {
       width: 100%;
       background: var(--card-bg);
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      padding: 20px 16px 30px 16px;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 22px 18px 34px 18px;
       max-height: 85vh;
       overflow-y: auto;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+      transform: translateY(20px);
+      transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+
+    .modal.open .modal-content {
+      transform: translateY(0);
     }
 
     .hidden { display: none !important; }
@@ -269,12 +329,12 @@
     <div id="tab-analytics" class="hidden">
       <div class="card">
         <div class="card-title">Доход за сегодня</div>
-        <h2 id="today-revenue" style="color: var(--success); margin-bottom: 4px;">0 ₽</h2>
+        <h2 id="today-revenue" style="color: var(--success); font-size: 28px; margin-bottom: 4px;">0 ₽</h2>
         <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
       </div>
       <div class="card">
         <div class="card-title">Безопасность и Бэкап</div>
-        <p style="font-size: 12px; color: var(--hint); margin-bottom: 10px;">
+        <p style="font-size: 12px; color: var(--hint); margin-bottom: 12px; line-height: 1.4;">
           Данные автоматически синхронизируются с вашим Telegram. Дополнительно вы можете сохранить резервный файл.
         </p>
         <button class="btn btn-secondary" style="margin-bottom: 8px;" onclick="exportDataBackup()">📥 Скачать бэкап (JSON)</button>
@@ -308,7 +368,7 @@
   <!-- МОДАЛКА: ЗАПИСЬ -->
   <div class="modal" id="modal-booking">
     <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Быстрая запись</h3>
+      <h3 style="margin-bottom: 16px; font-size: 18px;">Быстрая запись</h3>
       
       <label class="card-title">Имя клиента</label>
       <input type="text" id="booking-client-input" class="input-field" placeholder="Имя клиента..." list="clients-datalist">
@@ -331,7 +391,7 @@
   <!-- МОДАЛКА: КЛИЕНТ -->
   <div class="modal" id="modal-client">
     <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Новый клиент</h3>
+      <h3 style="margin-bottom: 16px; font-size: 18px;">Новый клиент</h3>
       <input type="text" id="new-client-name" class="input-field" placeholder="Имя клиента">
       <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
       <button class="btn" onclick="saveClient()">Сохранить</button>
@@ -342,7 +402,7 @@
   <!-- МОДАЛКА: УСЛУГА -->
   <div class="modal" id="modal-service">
     <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Новая услуга</h3>
+      <h3 style="margin-bottom: 16px; font-size: 18px;">Новая услуга</h3>
       <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
       <input type="number" id="new-service-price" class="input-field" placeholder="Цена (₽)">
       <button class="btn" onclick="saveService()">Сохранить</button>
@@ -354,7 +414,6 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Чистая структура приложения без демо-данных
   let appState = {
     selectedDate: getTodayStr(),
     clients: [],
@@ -362,12 +421,10 @@
     bookings: []
   };
 
-  // --- СИНХРОНИЗАЦИЯ И ХРАНЕНИЕ (ОБЛАКО + LOCALSTORAGE) ---
   function saveState() {
     const serialized = JSON.stringify(appState);
     localStorage.setItem('ba_master_state', serialized);
 
-    // Синхронизируем с облачным хранилищем Telegram
     if (tg?.CloudStorage) {
       tg.CloudStorage.setItem('ba_master_state', serialized, (err, success) => {
         const statusEl = document.getElementById('cloud-status');
@@ -376,14 +433,13 @@
           statusEl.style.color = 'var(--success)';
         } else {
           statusEl.innerText = '⚠️ Сохранено локально';
-          statusEl.style.color = 'var(--warning)';
+          statusEl.style.color = 'var(--hint)';
         }
       });
     }
   }
 
   function loadState(onComplete) {
-    // 1. Пробуем загрузить из CloudStorage Telegram
     if (tg?.CloudStorage) {
       tg.CloudStorage.getItem('ba_master_state', (err, value) => {
         if (!err && value) {
@@ -393,7 +449,6 @@
             return;
           } catch(e) {}
         }
-        // Fallback на localStorage
         loadFromLocalStorage();
         onComplete();
       });
@@ -431,7 +486,6 @@
     if (tabName === 'analytics') renderAnalytics();
   }
 
-  // --- ДНИ ---
   function renderDaysRibbon() {
     const container = document.getElementById('days-container');
     container.innerHTML = '';
@@ -455,7 +509,6 @@
     }
   }
 
-  // --- РАСПИСАНИЕ ---
   function renderSchedule() {
     const list = document.getElementById('schedule-list');
     list.innerHTML = '';
@@ -465,7 +518,7 @@
       .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
 
     if (dayBookings.length === 0) {
-      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 12px;">Записей на этот день нет</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 16px; font-size:14px;">Записей на этот день нет</div>';
       return;
     }
 
@@ -474,17 +527,17 @@
       item.className = 'list-item';
       item.innerHTML = `
         <div>
-          <div style="font-weight:700; color:var(--primary);">${b.time || 'Без времени'}</div>
-          <div style="font-weight:600;">${escapeHtml(b.clientName || 'Гость')}</div>
-          <div style="font-size:12px; color:var(--hint);">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' ₽' : ''}</div>
+          <div style="font-weight:700; color:var(--primary); font-size:15px;">${b.time || 'Без времени'}</div>
+          <div style="font-weight:600; font-size:14px; margin-top:2px;">${escapeHtml(b.clientName || 'Гость')}</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:2px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' ₽' : ''}</div>
         </div>
         <div style="display:flex; align-items:center;">
-          <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px;">
+          <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:6px 8px; border-radius:8px;">
             <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
             <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
             <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
           </select>
-          <button class="delete-btn" onclick="deleteBooking(${b.id})">&times;</button>
+          <button class="delete-btn" onclick="deleteBooking(${b.id})">&#10005;</button>
         </div>
       `;
       list.appendChild(item);
@@ -506,7 +559,6 @@
     renderSchedule();
   }
 
-  // --- ЗАПИСЬ ---
   function openNewBookingModal() {
     const datalist = document.getElementById('clients-datalist');
     datalist.innerHTML = appState.clients.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
@@ -553,7 +605,6 @@
     renderSchedule();
   }
 
-  // --- КЛИЕНТЫ ---
   function openClientModal() { document.getElementById('modal-client').classList.add('open'); }
   function saveClient() {
     const name = document.getElementById('new-client-name').value.trim() || 'Гость';
@@ -578,15 +629,14 @@
     list.innerHTML = appState.clients.map(c => `
       <div class="list-item">
         <div>
-          <div style="font-weight:600;">${escapeHtml(c.name)}</div>
-          <div style="font-size:12px; color:var(--hint);">${escapeHtml(c.phone)}</div>
+          <div style="font-weight:600; font-size:14px;">${escapeHtml(c.name)}</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:2px;">${escapeHtml(c.phone)}</div>
         </div>
-        <button class="delete-btn" onclick="deleteClient(${c.id})">&times;</button>
+        <button class="delete-btn" onclick="deleteClient(${c.id})">&#10005;</button>
       </div>
-    `).join('') || '<div style="color:var(--hint); text-align:center;">База клиентов пуста</div>';
+    `).join('') || '<div style="color:var(--hint); text-align:center; padding:16px; font-size:14px;">База клиентов пуста</div>';
   }
 
-  // --- УСЛУГИ ---
   function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
   function saveService() {
     const title = document.getElementById('new-service-title').value.trim() || 'Услуга';
@@ -611,17 +661,16 @@
     list.innerHTML = appState.services.map(s => `
       <div class="list-item">
         <div>
-          <div style="font-weight:600;">${escapeHtml(s.title)}</div>
+          <div style="font-weight:600; font-size:14px;">${escapeHtml(s.title)}</div>
         </div>
         <div style="display:flex; align-items:center;">
-          <span style="font-weight:700; color:var(--primary);">${s.price || 0} ₽</span>
-          <button class="delete-btn" onclick="deleteService(${s.id})">&times;</button>
+          <span style="font-weight:700; color:var(--primary); font-size:14px;">${s.price || 0} ₽</span>
+          <button class="delete-btn" onclick="deleteService(${s.id})">&#10005;</button>
         </div>
       </div>
-    `).join('') || '<div style="color:var(--hint); text-align:center;">Каталог услуг пуст</div>';
+    `).join('') || '<div style="color:var(--hint); text-align:center; padding:16px; font-size:14px;">Каталог услуг пуст</div>';
   }
 
-  // --- БЭКАП И ЭКСПОРТ ---
   function exportDataBackup() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -669,7 +718,6 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Запуск с выгрузкой из облака
   loadState(() => {
     renderDaysRibbon();
     renderSchedule();
