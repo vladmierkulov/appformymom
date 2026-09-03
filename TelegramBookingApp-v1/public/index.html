@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Beauty Agent Pro</title>
+  <title>Beauty Agent Cloud</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -20,8 +20,7 @@
 
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
@@ -42,6 +41,14 @@
       font-weight: 700;
       font-size: 18px;
       border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .cloud-status {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--success);
+      display: block;
+      margin-top: 2px;
     }
 
     .app-content {
@@ -213,7 +220,10 @@
 </head>
 <body>
 
-  <div class="app-header" id="header-title">Журнал записей</div>
+  <div class="app-header">
+    <span id="header-title">Журнал записей</span>
+    <span class="cloud-status" id="cloud-status">☁️ Облако подключено</span>
+  </div>
 
   <div class="app-content">
     
@@ -255,7 +265,7 @@
       </div>
     </div>
 
-    <!-- ТАБ 4: АНАЛИТИКА -->
+    <!-- ТАБ 4: АНАЛИТИКА И РЕЗЕРВНОЕ КОПИРОВАНИЕ -->
     <div id="tab-analytics" class="hidden">
       <div class="card">
         <div class="card-title">Доход за сегодня</div>
@@ -263,11 +273,13 @@
         <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
       </div>
       <div class="card">
-        <div class="card-title">База</div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px;">
-          <span>Клиентов в базе: <b id="stat-clients-count">0</b></span>
-          <span>Услуг: <b id="stat-services-count">0</b></span>
-        </div>
+        <div class="card-title">Безопасность и Бэкап</div>
+        <p style="font-size: 12px; color: var(--hint); margin-bottom: 10px;">
+          Данные автоматически синхронизируются с вашим Telegram. Дополнительно вы можете сохранить резервный файл.
+        </p>
+        <button class="btn btn-secondary" style="margin-bottom: 8px;" onclick="exportDataBackup()">📥 Скачать бэкап (JSON)</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importDataBackup(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📤 Восстановить из файла</button>
       </div>
     </div>
 
@@ -287,7 +299,7 @@
       <span class="icon">✂️</span>
       <span>Услуги</span>
     </div>
-    <div class="tab-item" onclick="switchTab('analytics', 'Аналитика')">
+    <div class="tab-item" onclick="switchTab('analytics', 'Настройки / Доход')">
       <span class="icon">📊</span>
       <span>Доходы</span>
     </div>
@@ -298,14 +310,14 @@
     <div class="modal-content">
       <h3 style="margin-bottom: 14px;">Быстрая запись</h3>
       
-      <label class="card-title">Имя клиента (необязательно)</label>
-      <input type="text" id="booking-client-input" class="input-field" placeholder="Введите имя или выберите из списка..." list="clients-datalist">
+      <label class="card-title">Имя клиента</label>
+      <input type="text" id="booking-client-input" class="input-field" placeholder="Имя клиента..." list="clients-datalist">
       <datalist id="clients-datalist"></datalist>
 
-      <label class="card-title">Телефон (необязательно)</label>
-      <input type="tel" id="booking-phone-input" class="input-field" placeholder="Номер телефона">
+      <label class="card-title">Телефон</label>
+      <input type="tel" id="booking-phone-input" class="input-field" placeholder="Телефон">
 
-      <label class="card-title">Услуга (необязательно)</label>
+      <label class="card-title">Услуга</label>
       <select id="booking-service-select"></select>
 
       <label class="card-title">Время</label>
@@ -320,8 +332,8 @@
   <div class="modal" id="modal-client">
     <div class="modal-content">
       <h3 style="margin-bottom: 14px;">Новый клиент</h3>
-      <input type="text" id="new-client-name" class="input-field" placeholder="Имя (необязательно)">
-      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон (необязательно)">
+      <input type="text" id="new-client-name" class="input-field" placeholder="Имя клиента">
+      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
       <button class="btn" onclick="saveClient()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
@@ -332,7 +344,7 @@
     <div class="modal-content">
       <h3 style="margin-bottom: 14px;">Новая услуга</h3>
       <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
-      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (₽, необязательно)">
+      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (₽)">
       <button class="btn" onclick="saveService()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
@@ -342,12 +354,66 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
+  // Чистая структура приложения без демо-данных
   let appState = {
     selectedDate: getTodayStr(),
-    clients: JSON.parse(localStorage.getItem('ba_clients') || '[]'),
-    services: JSON.parse(localStorage.getItem('ba_services') || '[]'),
-    bookings: JSON.parse(localStorage.getItem('ba_bookings') || '[]')
+    clients: [],
+    services: [],
+    bookings: []
   };
+
+  // --- СИНХРОНИЗАЦИЯ И ХРАНЕНИЕ (ОБЛАКО + LOCALSTORAGE) ---
+  function saveState() {
+    const serialized = JSON.stringify(appState);
+    localStorage.setItem('ba_master_state', serialized);
+
+    // Синхронизируем с облачным хранилищем Telegram
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.setItem('ba_master_state', serialized, (err, success) => {
+        const statusEl = document.getElementById('cloud-status');
+        if (success) {
+          statusEl.innerText = '☁️ Сохранено в облако TG';
+          statusEl.style.color = 'var(--success)';
+        } else {
+          statusEl.innerText = '⚠️ Сохранено локально';
+          statusEl.style.color = 'var(--warning)';
+        }
+      });
+    }
+  }
+
+  function loadState(onComplete) {
+    // 1. Пробуем загрузить из CloudStorage Telegram
+    if (tg?.CloudStorage) {
+      tg.CloudStorage.getItem('ba_master_state', (err, value) => {
+        if (!err && value) {
+          try {
+            appState = { ...appState, ...JSON.parse(value) };
+            onComplete();
+            return;
+          } catch(e) {}
+        }
+        // Fallback на localStorage
+        loadFromLocalStorage();
+        onComplete();
+      });
+    } else {
+      loadFromLocalStorage();
+      onComplete();
+    }
+  }
+
+  function loadFromLocalStorage() {
+    const localData = localStorage.getItem('ba_master_state');
+    if (localData) {
+      try { appState = { ...appState, ...JSON.parse(localData) }; } catch(e) {}
+    }
+  }
+
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
 
   function switchTab(tabName, title) {
     document.querySelectorAll('.app-content > div').forEach(el => el.classList.add('hidden'));
@@ -363,15 +429,6 @@
     if (tabName === 'clients') renderClients();
     if (tabName === 'services') renderServices();
     if (tabName === 'analytics') renderAnalytics();
-  }
-
-  function saveBookings() { localStorage.setItem('ba_bookings', JSON.stringify(appState.bookings)); }
-  function saveClients() { localStorage.setItem('ba_clients', JSON.stringify(appState.clients)); }
-  function saveServices() { localStorage.setItem('ba_services', JSON.stringify(appState.services)); }
-
-  function getTodayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
   // --- ДНИ ---
@@ -408,7 +465,7 @@
       .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
 
     if (dayBookings.length === 0) {
-      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 10px;">Нет записей на этот день</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 12px;">Записей на этот день нет</div>';
       return;
     }
 
@@ -438,18 +495,18 @@
     const booking = appState.bookings.find(b => b.id === id);
     if (booking) {
       booking.status = newStatus;
-      saveBookings();
+      saveState();
       renderSchedule();
     }
   }
 
   function deleteBooking(id) {
     appState.bookings = appState.bookings.filter(b => b.id !== id);
-    saveBookings();
+    saveState();
     renderSchedule();
   }
 
-  // --- СОЗДАНИЕ ЗАПИСИ ---
+  // --- ЗАПИСЬ ---
   function openNewBookingModal() {
     const datalist = document.getElementById('clients-datalist');
     datalist.innerHTML = appState.clients.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
@@ -491,7 +548,7 @@
       status: 'confirmed'
     });
 
-    saveBookings();
+    saveState();
     closeModals();
     renderSchedule();
   }
@@ -503,7 +560,7 @@
     const phone = document.getElementById('new-client-phone').value.trim() || 'Нет телефона';
 
     appState.clients.push({ id: Date.now(), name, phone });
-    saveClients();
+    saveState();
     closeModals();
     renderClients();
     document.getElementById('new-client-name').value = '';
@@ -512,7 +569,7 @@
 
   function deleteClient(id) {
     appState.clients = appState.clients.filter(c => c.id !== id);
-    saveClients();
+    saveState();
     renderClients();
   }
 
@@ -526,17 +583,17 @@
         </div>
         <button class="delete-btn" onclick="deleteClient(${c.id})">&times;</button>
       </div>
-    `).join('') || '<div style="color:var(--hint); text-align:center;">Список клиентов пуст</div>';
+    `).join('') || '<div style="color:var(--hint); text-align:center;">База клиентов пуста</div>';
   }
 
   // --- УСЛУГИ ---
   function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
   function saveService() {
-    const title = document.getElementById('new-service-title').value.trim() || 'Без названия';
+    const title = document.getElementById('new-service-title').value.trim() || 'Услуга';
     const price = Number(document.getElementById('new-service-price').value) || 0;
 
     appState.services.push({ id: Date.now(), title, price });
-    saveServices();
+    saveState();
     closeModals();
     renderServices();
     document.getElementById('new-service-title').value = '';
@@ -545,7 +602,7 @@
 
   function deleteService(id) {
     appState.services = appState.services.filter(s => s.id !== id);
-    saveServices();
+    saveState();
     renderServices();
   }
 
@@ -564,15 +621,44 @@
     `).join('') || '<div style="color:var(--hint); text-align:center;">Каталог услуг пуст</div>';
   }
 
-  // --- АНАЛИТИКА ---
+  // --- БЭКАП И ЭКСПОРТ ---
+  function exportDataBackup() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `beauty_backup_${getTodayStr()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function importDataBackup(event) {
+    const fileReader = new FileReader();
+    fileReader.onload = function(e) {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (parsed && Array.isArray(parsed.bookings)) {
+          appState = parsed;
+          saveState();
+          alert('База успешно восстановлена!');
+          renderDaysRibbon();
+          renderSchedule();
+        } else {
+          alert('Неверный формат файла бэкапа.');
+        }
+      } catch(err) {
+        alert('Ошибка при чтении файла');
+      }
+    };
+    fileReader.readAsText(event.target.files[0]);
+  }
+
   function renderAnalytics() {
     const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
     const totalRevenue = completedToday.reduce((sum, b) => sum + (b.price || 0), 0);
 
     document.getElementById('today-revenue').innerText = `${totalRevenue} ₽`;
     document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
-    document.getElementById('stat-clients-count').innerText = appState.clients.length;
-    document.getElementById('stat-services-count').innerText = appState.services.length;
   }
 
   function closeModals() {
@@ -583,8 +669,11 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  renderDaysRibbon();
-  renderSchedule();
+  // Запуск с выгрузкой из облака
+  loadState(() => {
+    renderDaysRibbon();
+    renderSchedule();
+  });
 </script>
 </body>
 </html>
