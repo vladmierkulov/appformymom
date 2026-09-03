@@ -308,7 +308,7 @@
     <div id="tab-analytics" class="hidden">
       <div class="card">
         <div class="card-title">Доход за сегодня</div>
-        <h2 id="today-revenue" style="color: var(--success); font-size: 26px; font-weight: 700; margin-bottom: 2px;">0 ₽</h2>
+        <h2 id="today-revenue" style="color: var(--success); font-size: 26px; font-weight: 700; margin-bottom: 2px;">0 €</h2>
         <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
       </div>
       <div class="card">
@@ -386,7 +386,7 @@
       <div class="sheet-handle"></div>
       <h3 style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новая услуга</h3>
       <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
-      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (₽)">
+      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (€)">
       <button class="btn" onclick="saveService()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
@@ -511,7 +511,7 @@
         <div>
           <div style="font-weight:700; color:var(--primary); font-size:14px;">${b.time || 'Без времени'}</div>
           <div style="font-weight:600; font-size:14px; margin-top:1px;">${escapeHtml(b.clientName || 'Гость')}</div>
-          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' ₽' : ''}</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' €' : ''}</div>
         </div>
         <div style="display:flex; align-items:center;">
           <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px;">
@@ -547,7 +547,7 @@
 
     const sSelect = document.getElementById('booking-service-select');
     sSelect.innerHTML = `<option value="">-- Без услуги --</option>` + 
-      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price || 0} ₽)</option>`).join('');
+      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price || 0} €)</option>`).join('');
 
     document.getElementById('booking-client-input').value = '';
     document.getElementById('booking-phone-input').value = '';
@@ -646,7 +646,7 @@
           <div style="font-weight:600; font-size:14px;">${escapeHtml(s.title)}</div>
         </div>
         <div style="display:flex; align-items:center;">
-          <span style="font-weight:600; color:var(--primary); font-size:14px;">${s.price || 0} ₽</span>
+          <span style="font-weight:600; color:var(--primary); font-size:14px;">${s.price || 0} €</span>
           <button class="delete-btn" onclick="deleteService(${s.id})">&#10005;</button>
         </div>
       </div>
@@ -688,7 +688,7 @@
     const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
     const totalRevenue = completedToday.reduce((sum, b) => sum + (b.price || 0), 0);
 
-    document.getElementById('today-revenue').innerText = `${totalRevenue} ₽`;
+    document.getElementById('today-revenue').innerText = `${totalRevenue} €`;
     document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
   }
 
