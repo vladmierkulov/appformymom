@@ -1,1 +1,66 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="https://telegram.org/js/telegram-web-app.js?63"></script><link rel="stylesheet" href="/style.css"><title>BookingApp</title></head><body><main><header><div><p class="eyebrow">BookingApp</p><h1>Мои записи</h1></div><button id="settings" aria-label="Настройки">⚙</button></header><section class="picker"><button id="prev">‹</button><input id="date" type="date"><button id="next">›</button></section><section id="summary" class="summary"></section><section id="agenda"></section><button id="add" class="primary">＋ Добавить запись</button></main><dialog id="editor"><form method="dialog"><h2 id="formTitle">Запись</h2><label>Дата<input id="fDate" type="date" required></label><label>Время<input id="fTime" type="time" required></label><label>Имя клиента<input id="fName" required autocomplete="name"></label><label>Телефон<input id="fPhone" type="tel" autocomplete="tel"></label><label>Цена, €<input id="fPrice" type="number" min="0" step="0.01" value="0"></label><menu><button value="cancel">Отмена</button><button type="button" id="delete" class="danger">Удалить</button><button type="button" id="save" class="primary">Сохранить</button></menu></form></dialog><dialog id="settingsDialog"><form method="dialog"><h2>Настройки</h2><label class="toggle"><input id="reminders" type="checkbox"> Напоминать о завтрашних записях</label><label>Шаблон сообщения<textarea id="template" rows="4"></textarea></label><p class="hint">Теги: {name}, {date}, {time}. Сообщение откроется готовым — вы сами нажмёте «Отправить».</p><menu><button value="cancel">Закрыть</button><button type="button" id="saveSettings" class="primary">Сохранить</button></menu></form></dialog><script type="module" src="/app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Запись на прием</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Подключение Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h2>Онлайн-запись</h2>
+      <p class="subtitle">Выберите услугу и удобное время</p>
+    </header>
+
+    <!-- Список услуг -->
+    <section class="card">
+      <label for="service-select">Услуга</label>
+      <select id="service-select">
+        <option value="" disabled selected>Выберите услугу...</option>
+        <option value="Стрижка">Стрижка</option>
+        <option value="Окрашивание">Окрашивание</option>
+        <option value="Маникюр">Маникюр</option>
+      </select>
+    </section>
+
+    <!-- Дата и время -->
+    <section class="card grid-2">
+      <div>
+        <label for="booking-date">Дата</label>
+        <input type="date" id="booking-date">
+      </div>
+      <div>
+        <label for="booking-time">Время</label>
+        <input type="time" id="booking-time">
+      </div>
+    </section>
+
+    <!-- Модальное окно / Секция ввода данных -->
+    <div id="booking-modal" class="modal hidden">
+      <div class="modal-content card">
+        <h3>Детали записи</h3>
+        <p class="info-text">Укажите ваш номер телефона для подтверждения</p>
+        
+        <div class="input-group">
+          <label for="client-phone">Номер телефона *</label>
+          <input type="tel" id="client-phone" placeholder="+7 (999) 000-00-00">
+          <span id="phone-error" class="error-msg hidden">Введите корректный номер</span>
+        </div>
+
+        <div class="modal-actions">
+          <button id="cancel-btn" class="btn btn-secondary">Отмена</button>
+          <button id="confirm-btn" class="btn btn-primary">Записаться</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Главная кнопка действия -->
+    <button id="open-modal-btn" class="btn btn-primary full-width">Продолжить</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
