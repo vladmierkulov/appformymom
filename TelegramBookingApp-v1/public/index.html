@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Онлайн-запись</title>
+  <title>Запись клиента (для мастера)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -39,14 +39,21 @@
       max-width: 420px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       padding-bottom: 20px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
     }
 
     /* Карточки */
     .card {
       background: var(--card-bg);
-      padding: 16px;
+      padding: 14px 16px;
       border-radius: var(--radius);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
@@ -60,8 +67,8 @@
       margin-bottom: 10px;
     }
 
-    /* Выбор услуги */
-    select {
+    /* Поля ввода */
+    .input-field {
       width: 100%;
       padding: 12px;
       border: 1px solid rgba(0, 0, 0, 0.1);
@@ -70,15 +77,20 @@
       color: var(--text);
       font-size: 15px;
       outline: none;
+      margin-bottom: 8px;
     }
 
-    /* Лента дней (Горизонтальный скролл) */
+    .input-field:focus {
+      border-color: var(--primary);
+    }
+
+    /* Лента дней */
     .days-ribbon {
       display: flex;
       gap: 8px;
       overflow-x: auto;
       scroll-behavior: smooth;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
@@ -88,8 +100,8 @@
     }
 
     .day-chip {
-      flex: 0 0 65px;
-      padding: 10px 6px;
+      flex: 0 0 62px;
+      padding: 10px 4px;
       background: var(--bg);
       border-radius: 12px;
       text-align: center;
@@ -124,7 +136,7 @@
 
     .day-chip.selected .weekday,
     .day-chip.selected .month-name {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.85);
     }
 
     /* Сетка времени */
@@ -157,12 +169,8 @@
       grid-column: span 2;
     }
 
-    /* Скрытое поле ввода своего времени */
     .custom-time-wrapper {
       margin-top: 10px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
     }
 
     .custom-time-wrapper input[type="time"] {
@@ -176,9 +184,15 @@
       width: 100%;
     }
 
-    /* Кнопки */
+    /* Кнопки действий */
+    .actions-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
     .btn {
-      width: 100%;
+      flex: 1;
       padding: 14px;
       border: none;
       border-radius: var(--radius);
@@ -190,90 +204,44 @@
       transition: opacity 0.2s;
     }
 
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
     .btn-secondary {
       background: transparent;
       color: var(--hint);
-    }
-
-    /* Модальное окно */
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: flex-end;
-      z-index: 100;
-    }
-
-    .modal-content {
-      width: 100%;
-      background: var(--card-bg);
-      border-radius: var(--radius) var(--radius) 0 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      animation: slideUp 0.25s ease-out;
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 12px;
       border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 15px;
-      outline: none;
+      flex: 0 0 100px;
     }
 
     .error-msg {
       color: var(--danger);
       font-size: 12px;
-      margin-top: 4px;
+      margin-bottom: 6px;
       display: block;
     }
 
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
     .hidden { display: none !important; }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- Услуга -->
+  <h2 class="header-title">Новая запись</h2>
+
+  <!-- Данные клиента -->
   <div class="card">
-    <div class="card-title">1. Выберите услугу</div>
-    <select id="service-select">
-      <option value="Стрижка">Стрижка</option>
-      <option value="Окрашивание">Окрашивание</option>
-      <option value="Маникюр">Маникюр</option>
-    </select>
+    <div class="card-title">1. Данные клиента</div>
+    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента">
+    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон клиента *">
+    <span class="error-msg hidden" id="phone-error">Введите корректный номер (от 10 цифр)</span>
+    <input type="text" id="booking-note" class="input-field" placeholder="Заметка / Процедура (необязательно)">
   </div>
 
-  <!-- Дни прямо на экране -->
+  <!-- Выбор даты -->
   <div class="card">
     <div class="card-title">2. Дата записи</div>
     <div class="days-ribbon" id="days-container"></div>
   </div>
 
-  <!-- Время начиная с 7:00 -->
+  <!-- Время начиная с 07:00 -->
   <div class="card">
     <div class="card-title">3. Время записи</div>
     <div class="time-grid" id="time-container">
@@ -294,37 +262,16 @@
       <div class="time-slot custom-btn" id="custom-time-btn">+ Свое время</div>
     </div>
 
-    <!-- Поле для своего времени -->
     <div class="custom-time-wrapper hidden" id="custom-time-box">
       <input type="time" id="custom-time-input" value="07:30">
     </div>
   </div>
 
-  <!-- Главная кнопка -->
-  <button class="btn" id="open-modal-btn" disabled>Записаться</button>
-</div>
-
-<!-- Модальное окно подтверждения -->
-<div class="modal hidden" id="booking-modal">
-  <div class="modal-content">
-    <h3>Подтверждение записи</h3>
-    <p id="summary-text" style="font-size: 14px; color: var(--hint);"></p>
-
-    <div>
-      <input type="text" id="client-name" class="input-field" placeholder="Ваше имя">
-    </div>
-
-    <div>
-      <input type="tel" id="client-phone" class="input-field" placeholder="Номер телефона *">
-      <span class="error-msg hidden" id="phone-error">Введите корректный номер (от 10 цифр)</span>
-    </div>
-
-    <div class="modal-actions">
-      <!-- Нажатие "Отмена" ЗАКРЫВАЕТ окно БЕЗ проверок -->
-      <button class="btn btn-secondary" id="cancel-btn">Отмена</button>
-      <!-- Нажатие "Подтвердить" ЗАПУСКАЕТ проверку -->
-      <button class="btn" id="confirm-btn">Записаться</button>
-    </div>
+  <!-- Действия -->
+  <div class="actions-group">
+    <!-- Кнопка "Сбросить" просто очищает поля БЕЗ вызова ошибок -->
+    <button class="btn btn-secondary" id="reset-btn">Сбросить</button>
+    <button class="btn" id="submit-btn">Записать</button>
   </div>
 </div>
 
@@ -332,29 +279,27 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Состояние
   let selectedDateStr = null;
   let selectedTime = null;
 
-  // Элементы
   const daysContainer = document.getElementById('days-container');
   const timeSlots = document.querySelectorAll('.time-slot:not(.custom-btn)');
   const customTimeBtn = document.getElementById('custom-time-btn');
   const customTimeBox = document.getElementById('custom-time-box');
   const customTimeInput = document.getElementById('custom-time-input');
-  const openModalBtn = document.getElementById('open-modal-btn');
   
-  const modal = document.getElementById('booking-modal');
-  const cancelBtn = document.getElementById('cancel-btn');
-  const confirmBtn = document.getElementById('confirm-btn');
-  const phoneInput = document.getElementById('client-phone');
+  const clientName = document.getElementById('client-name');
+  const clientPhone = document.getElementById('client-phone');
+  const bookingNote = document.getElementById('booking-note');
   const phoneError = document.getElementById('phone-error');
-  const summaryText = document.getElementById('summary-text');
+  
+  const resetBtn = document.getElementById('reset-btn');
+  const submitBtn = document.getElementById('submit-btn');
 
   const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
-  // Generates 30 ближайших дней
+  // Лента на 30 дней вперед
   function generateDaysRibbon() {
     daysContainer.innerHTML = '';
     const today = new Date();
@@ -376,7 +321,6 @@
         <div class="month-name">${months[d.getMonth()]}</div>
       `;
 
-      // По умолчанию выбираем первый день (сегодня)
       if (i === 0) {
         chip.classList.add('selected');
         selectedDateStr = fullDateStr;
@@ -386,7 +330,6 @@
         document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
         selectedDateStr = fullDateStr;
-        checkReady();
       });
 
       daysContainer.appendChild(chip);
@@ -399,22 +342,19 @@
       clearTimeSelection();
       slot.classList.add('selected');
       selectedTime = slot.dataset.time;
-      checkReady();
     });
   });
 
-  // Кнопка свой выбор времени
+  // Выбор своего времени
   customTimeBtn.addEventListener('click', () => {
     clearTimeSelection();
     customTimeBtn.classList.add('selected');
     customTimeBox.classList.remove('hidden');
     selectedTime = customTimeInput.value;
-    checkReady();
   });
 
   customTimeInput.addEventListener('input', (e) => {
     selectedTime = e.target.value;
-    checkReady();
   });
 
   function clearTimeSelection() {
@@ -424,62 +364,54 @@
     selectedTime = null;
   }
 
-  function checkReady() {
-    openModalBtn.disabled = !(selectedDateStr && selectedTime);
-  }
-
-  // Открытие модалки
-  openModalBtn.addEventListener('click', () => {
-    const serviceName = document.getElementById('service-select').value;
-    summaryText.innerText = `${serviceName} — ${selectedDateStr} в ${selectedTime}`;
-    hidePhoneError();
-    modal.classList.remove('hidden');
-  });
-
-  // КНОПКА ОТМЕНА — ЗАКРЫТИЕ БЕЗ КАКИХ-ЛИБО ПРОВЕРОК
-  cancelBtn.addEventListener('click', (e) => {
+  // КНОПКА СБРОСИТЬ — очищает поля без каких-либо проверок
+  resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    closeModal();
+    clientName.value = '';
+    clientPhone.value = '';
+    bookingNote.value = '';
+    phoneError.classList.add('hidden');
+    clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+    clearTimeSelection();
+    generateDaysRibbon();
   });
 
-  function closeModal() {
-    modal.classList.add('hidden');
-    hidePhoneError();
-  }
-
-  function hidePhoneError() {
-    phoneError.classList.add('hidden');
-    phoneInput.style.borderColor = 'rgba(0, 0, 0, 0.1)';
-  }
-
-  // ПОДТВЕРЖДЕНИЕ — Валидация выполняется ИСКЛЮЧИТЕЛЬНО здесь
-  confirmBtn.addEventListener('click', () => {
-    const rawPhone = phoneInput.value.replace(/\D/g, '');
+  // КНОПКА ЗАПИСАТЬ — Проверка телефона ТОЛЬКО здесь
+  submitBtn.addEventListener('click', () => {
+    const rawPhone = clientPhone.value.replace(/\D/g, '');
+    
     if (rawPhone.length < 10) {
       phoneError.classList.remove('hidden');
-      phoneInput.style.borderColor = 'var(--danger)';
+      clientPhone.style.borderColor = 'var(--danger)';
+      clientPhone.focus();
       return;
     }
 
+    if (!selectedTime) {
+      alert('Пожалуйста, выберите время записи.');
+      return;
+    }
+
+    phoneError.classList.add('hidden');
+    clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+
     const payload = {
-      service: document.getElementById('service-select').value,
+      role: 'master',
+      client_name: clientName.value.trim() || 'Без имени',
+      client_phone: clientPhone.value.trim(),
+      note: bookingNote.value.trim(),
       date: selectedDateStr,
-      time: selectedTime,
-      name: document.getElementById('client-name').value,
-      phone: phoneInput.value
+      time: selectedTime
     };
 
     if (tg && tg.sendData) {
       tg.sendData(JSON.stringify(payload));
     } else {
-      alert('Запись отправлена:\n' + JSON.stringify(payload, null, 2));
-      closeModal();
+      alert('Запись создана в журнале:\n' + JSON.stringify(payload, null, 2));
     }
   });
 
-  // Старт
   generateDaysRibbon();
-  checkReady();
 </script>
 
 </body>
