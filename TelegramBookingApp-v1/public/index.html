@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Журнал записей мастера</title>
+  <title>Beauty Agent Mini</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: var(--tg-theme-bg-color, #f4f4f5);
+      --bg: var(--tg-theme-bg-color, #f4f4f7);
       --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
       --text: var(--tg-theme-text-color, #1c1c1e);
       --hint: var(--tg-theme-hint-color, #8e8e93);
       --primary: var(--tg-theme-button-color, #007aff);
       --primary-text: var(--tg-theme-button-text-color, #ffffff);
+      --success: #34c759;
+      --warning: #ff9500;
       --danger: #ff3b30;
       --radius: 14px;
     }
@@ -28,32 +30,71 @@
     body {
       background-color: var(--bg);
       color: var(--text);
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 420px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      padding-bottom: 30px;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .header-title {
-      font-size: 20px;
-      font-weight: 700;
+    /* Шапка */
+    .app-header {
+      background: var(--card-bg);
+      padding: 12px 16px;
       text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
     }
 
+    /* Основной контент */
+    .app-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      padding-bottom: 80px;
+    }
+
+    /* Таббар (Нижнее меню) */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--card-bg);
+      display: flex;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      z-index: 100;
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--hint);
+      cursor: pointer;
+      gap: 3px;
+    }
+
+    .tab-item.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .tab-item .icon {
+      font-size: 18px;
+    }
+
+    /* Карточки */
     .card {
       background: var(--card-bg);
-      padding: 14px 16px;
+      padding: 14px;
       border-radius: var(--radius);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      margin-bottom: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
 
     .card-title {
@@ -61,7 +102,6 @@
       font-weight: 600;
       color: var(--hint);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
@@ -73,188 +113,112 @@
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      scroll-behavior: smooth;
       padding-bottom: 4px;
-      -ms-overflow-style: none;
       scrollbar-width: none;
     }
-
     .days-ribbon::-webkit-scrollbar { display: none; }
 
     .day-chip {
-      flex: 0 0 62px;
-      padding: 10px 4px;
+      flex: 0 0 58px;
+      padding: 8px 0;
       background: var(--bg);
       border-radius: 12px;
       text-align: center;
       cursor: pointer;
-      border: 2px solid transparent;
-      transition: all 0.2s;
-    }
-
-    .day-chip .weekday {
-      font-size: 11px;
-      color: var(--hint);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .day-chip .day-num {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 2px 0;
-    }
-
-    .day-chip .month-name {
-      font-size: 11px;
-      color: var(--hint);
     }
 
     .day-chip.selected {
       background: var(--primary);
       color: var(--primary-text);
-      border-color: var(--primary);
     }
 
-    .day-chip.selected .weekday,
-    .day-chip.selected .month-name {
-      color: rgba(255, 255, 255, 0.85);
-    }
+    .day-chip .wk { font-size: 10px; text-transform: uppercase; opacity: 0.8; }
+    .day-chip .num { font-size: 16px; font-weight: 700; margin: 2px 0; }
 
-    /* Список существующих записей */
-    .bookings-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .booking-item {
+    /* Элементы списков */
+    .list-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 12px;
-      background: var(--bg);
-      border-radius: 10px;
-      border-left: 4px solid var(--primary);
-    }
-
-    .booking-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .booking-time-badge {
-      font-weight: 700;
-      font-size: 14px;
-      color: var(--primary);
-    }
-
-    .booking-name {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .booking-sub {
-      font-size: 12px;
-      color: var(--hint);
-    }
-
-    .delete-btn {
-      background: none;
-      border: none;
-      color: var(--danger);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 4px 8px;
-    }
-
-    .empty-state {
-      font-size: 13px;
-      color: var(--hint);
-      text-align: center;
-      padding: 8px 0;
-    }
-
-    /* Поля ввода */
-    .input-field {
-      width: 100%;
       padding: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
       background: var(--bg);
-      color: var(--text);
-      font-size: 15px;
-      outline: none;
+      border-radius: 10px;
       margin-bottom: 8px;
     }
 
-    /* Сетка времени */
-    .time-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .time-slot {
-      padding: 10px 4px;
-      text-align: center;
-      background: var(--bg);
-      border-radius: 10px;
-      font-size: 14px;
+    .badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.2s;
     }
 
-    .time-slot.selected {
-      background: var(--primary);
-      color: var(--primary-text);
-    }
+    .badge-confirmed { background: rgba(0,122,255,0.15); color: var(--primary); }
+    .badge-completed { background: rgba(52,199,89,0.15); color: var(--success); }
+    .badge-canceled { background: rgba(255,59,48,0.15); color: var(--danger); }
 
-    .time-slot.occupied {
-      background: rgba(255, 59, 48, 0.1);
-      color: var(--danger);
-      text-decoration: line-through;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-
-    .time-slot.custom-btn {
-      background: rgba(0, 122, 255, 0.1);
-      color: var(--primary);
-      grid-column: span 2;
-    }
-
-    .custom-time-wrapper {
-      margin-top: 10px;
-    }
-
-    .custom-time-wrapper input[type="time"] {
-      padding: 10px;
+    /* Поля и Кнопки */
+    .input-field, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
       border-radius: 10px;
-      border: 1px solid rgba(0, 0, 0, 0.1);
       background: var(--bg);
       color: var(--text);
       font-size: 15px;
+      margin-bottom: 10px;
       outline: none;
-      width: 100%;
     }
 
-    /* Кнопка */
     .btn {
       width: 100%;
-      padding: 14px;
+      padding: 13px;
       border: none;
       border-radius: var(--radius);
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      background-color: var(--primary);
+      background: var(--primary);
       color: var(--primary-text);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: rgba(0,122,255,0.1);
+      color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      width: auto;
+    }
+
+    /* Модальное окно */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: flex-end;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
       transition: opacity 0.2s;
-      margin-top: 6px;
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 100%;
+      background: var(--card-bg);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px 16px 30px 16px;
+      max-height: 85vh;
+      overflow-y: auto;
     }
 
     .hidden { display: none !important; }
@@ -262,256 +226,364 @@
 </head>
 <body>
 
-<div class="container">
-  <h2 class="header-title">Журнал записей</h2>
+  <div class="app-header" id="header-title">Журнал записей</div>
 
-  <!-- 1. Выбор даты -->
-  <div class="card">
-    <div class="card-title">1. Выберите дату</div>
-    <div class="days-ribbon" id="days-container"></div>
-  </div>
+  <div class="app-content">
+    
+    <!-- ТАБ 1: ЗАПИСИ (ЖУРНАЛ) -->
+    <div id="tab-schedule">
+      <div class="card">
+        <div class="card-title">Дата</div>
+        <div class="days-ribbon" id="days-container"></div>
+      </div>
 
-  <!-- 2. Записи на этот день -->
-  <div class="card">
-    <div class="card-title">
-      <span>Записи на <span id="selected-date-title">...</span></span>
-      <span id="bookings-count" style="color: var(--primary);">0</span>
-    </div>
-    <div class="bookings-list" id="bookings-list"></div>
-  </div>
-
-  <!-- 3. Форма добавления записи -->
-  <div class="card">
-    <div class="card-title">3. Новая запись на этот день</div>
-    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента">
-    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон">
-    <input type="text" id="booking-note" class="input-field" placeholder="Услуга / Заметка">
-
-    <div class="card-title" style="margin-top: 8px;">Время записи:</div>
-    <div class="time-grid" id="time-container">
-      <div class="time-slot" data-time="07:00">07:00</div>
-      <div class="time-slot" data-time="08:00">08:00</div>
-      <div class="time-slot" data-time="09:00">09:00</div>
-      <div class="time-slot" data-time="10:00">10:00</div>
-      <div class="time-slot" data-time="11:00">11:00</div>
-      <div class="time-slot" data-time="12:00">12:00</div>
-      <div class="time-slot" data-time="13:00">13:00</div>
-      <div class="time-slot" data-time="14:00">14:00</div>
-      <div class="time-slot" data-time="15:00">15:00</div>
-      <div class="time-slot" data-time="16:00">16:00</div>
-      <div class="time-slot" data-time="17:00">17:00</div>
-      <div class="time-slot" data-time="18:00">18:00</div>
-      <div class="time-slot" data-time="19:00">19:00</div>
-      <div class="time-slot" data-time="20:00">20:00</div>
-      <div class="time-slot custom-btn" id="custom-time-btn">+ Свое время</div>
+      <div class="card">
+        <div class="card-title">
+          <span>Расписание</span>
+          <button class="btn btn-sm btn-secondary" onclick="openNewBookingModal()">+ Запись</button>
+        </div>
+        <div id="schedule-list"></div>
+      </div>
     </div>
 
-    <div class="custom-time-wrapper hidden" id="custom-time-box">
-      <input type="time" id="custom-time-input" value="07:30">
+    <!-- ТАБ 2: КЛИЕНТЫ -->
+    <div id="tab-clients" class="hidden">
+      <div class="card">
+        <div class="card-title">
+          <span>База клиентов</span>
+          <button class="btn btn-sm btn-secondary" onclick="openClientModal()">+ Клиент</button>
+        </div>
+        <div id="clients-list"></div>
+      </div>
     </div>
 
-    <button class="btn" id="submit-btn">Сохранить запись</button>
+    <!-- ТАБ 3: УСЛУГИ -->
+    <div id="tab-services" class="hidden">
+      <div class="card">
+        <div class="card-title">
+          <span>Каталог услуг</span>
+          <button class="btn btn-sm btn-secondary" onclick="openServiceModal()">+ Услуга</button>
+        </div>
+        <div id="services-list"></div>
+      </div>
+    </div>
+
+    <!-- ТАБ 4: АНАЛИТИКА -->
+    <div id="tab-analytics" class="hidden">
+      <div class="card">
+        <div class="card-title">Финансы за сегодня</div>
+        <h2 id="today-revenue" style="color: var(--success); margin-bottom: 4px;">0 ₽</h2>
+        <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Всего в базе</div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+          <span>Клиентов: <b id="stat-clients-count">0</b></span>
+          <span>Услуг: <b id="stat-services-count">0</b></span>
+        </div>
+      </div>
+    </div>
+
   </div>
-</div>
+
+  <!-- НИЖНЕЕ МЕНЮ -->
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('schedule', 'Журнал записей')">
+      <span class="icon">📅</span>
+      <span>Записи</span>
+    </div>
+    <div class="tab-item" onclick="switchTab('clients', 'Мои клиенты')">
+      <span class="icon">👤</span>
+      <span>Клиенты</span>
+    </div>
+    <div class="tab-item" onclick="switchTab('services', 'Услуги и цены')">
+      <span class="icon">✂️</span>
+      <span>Услуги</span>
+    </div>
+    <div class="tab-item" onclick="switchTab('analytics', 'Аналитика')">
+      <span class="icon">📊</span>
+      <span>Доходы</span>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: НОВАЯ ЗАПИСЬ -->
+  <div class="modal" id="modal-booking">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 14px;">Новая запись</h3>
+      
+      <label class="card-title">Клиент</label>
+      <select id="booking-client-select"></select>
+
+      <label class="card-title">Услуга</label>
+      <select id="booking-service-select"></select>
+
+      <label class="card-title">Время</label>
+      <input type="time" id="booking-time" class="input-field" value="10:00">
+
+      <button class="btn" onclick="saveBooking()">Записать</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: НОВЫЙ КЛИЕНТ -->
+  <div class="modal" id="modal-client">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 14px;">Новый клиент</h3>
+      <input type="text" id="new-client-name" class="input-field" placeholder="Имя Фамилия">
+      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
+      <button class="btn" onclick="saveClient()">Сохранить</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: НОВАЯ УСЛУГА -->
+  <div class="modal" id="modal-service">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 14px;">Добавить услугу</h3>
+      <input type="text" id="new-service-title" class="input-field" placeholder="Название (например: Маникюр)">
+      <input type="number" id="new-service-price" class="input-field" placeholder="Стоимость (₽)">
+      <input type="number" id="new-service-duration" class="input-field" placeholder="Длительность (мин)" value="60">
+      <button class="btn" onclick="saveService()">Сохранить</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+    </div>
+  </div>
 
 <script>
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Локальная база данных записей
-  let bookings = JSON.parse(localStorage.getItem('master_journal_bookings') || '[]');
-  let selectedDateStr = null;
-  let selectedTime = null;
+  // Единое хранилище данных приложения
+  let appState = {
+    selectedDate: getTodayStr(),
+    clients: JSON.parse(localStorage.getItem('ba_clients') || '[]'),
+    services: JSON.parse(localStorage.getItem('ba_services') || '[]'),
+    bookings: JSON.parse(localStorage.getItem('ba_bookings') || '[]')
+  };
 
-  const daysContainer = document.getElementById('days-container');
-  const timeSlots = document.querySelectorAll('.time-slot:not(.custom-btn)');
-  const customTimeBtn = document.getElementById('custom-time-btn');
-  const customTimeBox = document.getElementById('custom-time-box');
-  const customTimeInput = document.getElementById('custom-time-input');
-  
-  const clientName = document.getElementById('client-name');
-  const clientPhone = document.getElementById('client-phone');
-  const bookingNote = document.getElementById('booking-note');
-  const submitBtn = document.getElementById('submit-btn');
-
-  const bookingsList = document.getElementById('bookings-list');
-  const bookingsCount = document.getElementById('bookings-count');
-  const selectedDateTitle = document.getElementById('selected-date-title');
-
-  const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-  const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-
-  // Сохранение в память
-  function saveToStorage() {
-    localStorage.setItem('master_journal_bookings', JSON.stringify(bookings));
+  // Дефолтные данные при первом запуске, чтобы экран не был пустым
+  if (appState.services.length === 0) {
+    appState.services = [
+      { id: 1, title: "Маникюр + Гель-лак", price: 2000, duration: 90 },
+      { id: 2, title: "Стрижка и укладка", price: 2500, duration: 60 }
+    ];
+    saveServices();
+  }
+  if (appState.clients.length === 0) {
+    appState.clients = [
+      { id: 1, name: "Анна Смирнова", phone: "+7 (999) 000-11-22" }
+    ];
+    saveClients();
   }
 
-  // Создание ленты дней
-  function generateDaysRibbon() {
-    daysContainer.innerHTML = '';
-    const today = new Date();
+  // --- НАВИГАЦИЯ (ТАБЫ) ---
+  function switchTab(tabName, title) {
+    document.querySelectorAll('.app-content > div').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+    document.getElementById('header-title').innerText = title;
 
-    for (let i = 0; i < 30; i++) {
+    const activeIdx = ['schedule', 'clients', 'services', 'analytics'].indexOf(tabName);
+    document.querySelectorAll('.tab-item')[activeIdx].classList.add('active');
+
+    if (tabName === 'schedule') renderSchedule();
+    if (tabName === 'clients') renderClients();
+    if (tabName === 'services') renderServices();
+    if (tabName === 'analytics') renderAnalytics();
+  }
+
+  // --- ХРАНИЛИЩЕ ---
+  function saveBookings() { localStorage.setItem('ba_bookings', JSON.stringify(appState.bookings)); }
+  function saveClients() { localStorage.setItem('ba_clients', JSON.stringify(appState.clients)); }
+  function saveServices() { localStorage.setItem('ba_services', JSON.stringify(appState.services)); }
+
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // --- ОТРЕСОВКА РАСПИСАНИЯ ---
+  function renderDaysRibbon() {
+    const container = document.getElementById('days-container');
+    container.innerHTML = '';
+    const today = new Date();
+    const wks = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+    for (let i = 0; i < 14; i++) {
       const d = new Date();
       d.setDate(today.getDate() + i);
-
-      const year = d.getFullYear();
-      const monthStr = String(d.getMonth() + 1).padStart(2, '0');
-      const dayStr = String(d.getDate()).padStart(2, '0');
-      const fullDateStr = `${year}-${monthStr}-${dayStr}`;
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
       const chip = document.createElement('div');
-      chip.className = 'day-chip';
-      chip.innerHTML = `
-        <div class="weekday">${weekdays[d.getDay()]}</div>
-        <div class="day-num">${d.getDate()}</div>
-        <div class="month-name">${months[d.getMonth()]}</div>
-      `;
-
-      if (i === 0 && !selectedDateStr) {
-        chip.classList.add('selected');
-        selectedDateStr = fullDateStr;
-      } else if (selectedDateStr === fullDateStr) {
-        chip.classList.add('selected');
-      }
-
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
-        selectedDateStr = fullDateStr;
-        
-        clearTimeSelection();
-        updateDayView();
-      });
-
-      daysContainer.appendChild(chip);
+      chip.className = `day-chip ${dateStr === appState.selectedDate ? 'selected' : ''}`;
+      chip.innerHTML = `<div class="wk">${wks[d.getDay()]}</div><div class="num">${d.getDate()}</div>`;
+      chip.onclick = () => {
+        appState.selectedDate = dateStr;
+        renderDaysRibbon();
+        renderSchedule();
+      };
+      container.appendChild(chip);
     }
   }
 
-  // Обновление отображения текущего выбранного дня
-  function updateDayView() {
-    const parts = selectedDateStr.split('-');
-    selectedDateTitle.innerText = `${parts[2]}.${parts[1]}`;
+  function renderSchedule() {
+    const list = document.getElementById('schedule-list');
+    list.innerHTML = '';
 
-    // Фильтруем записи для выбранного дня
-    const dayBookings = bookings
-      .filter(b => b.date === selectedDateStr)
+    const dayBookings = appState.bookings
+      .filter(b => b.date === appState.selectedDate)
       .sort((a, b) => a.time.localeCompare(b.time));
 
-    bookingsCount.innerText = dayBookings.length;
-    bookingsList.innerHTML = '';
-
     if (dayBookings.length === 0) {
-      bookingsList.innerHTML = '<div class="empty-state">Записей на этот день пока нет</div>';
-    } else {
-      dayBookings.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'booking-item';
-        div.innerHTML = `
-          <div class="booking-info">
-            <span class="booking-time-badge">${item.time}</span>
-            <span class="booking-name">${escapeHtml(item.name)}</span>
-            <span class="booking-sub">${escapeHtml(item.phone)} ${item.note ? '• ' + escapeHtml(item.note) : ''}</span>
-          </div>
-          <button class="delete-btn" title="Удалить запись">&times;</button>
-        `;
-
-        div.querySelector('.delete-btn').addEventListener('click', () => {
-          deleteBooking(item.id);
-        });
-
-        bookingsList.appendChild(div);
-      });
-    }
-
-    // Блокируем занятые временные слоты
-    const takenTimes = dayBookings.map(b => b.time);
-    timeSlots.forEach(slot => {
-      if (takenTimes.includes(slot.dataset.time)) {
-        slot.classList.add('occupied');
-      } else {
-        slot.classList.remove('occupied');
-      }
-    });
-  }
-
-  function deleteBooking(id) {
-    bookings = bookings.filter(b => b.id !== id);
-    saveToStorage();
-    updateDayView();
-  }
-
-  // Выбор слота времени
-  timeSlots.forEach(slot => {
-    slot.addEventListener('click', () => {
-      if (slot.classList.contains('occupied')) return;
-      
-      clearTimeSelection();
-      slot.classList.add('selected');
-      selectedTime = slot.dataset.time;
-    });
-  });
-
-  customTimeBtn.addEventListener('click', () => {
-    clearTimeSelection();
-    customTimeBtn.classList.add('selected');
-    customTimeBox.classList.remove('hidden');
-    selectedTime = customTimeInput.value;
-  });
-
-  customTimeInput.addEventListener('input', (e) => {
-    selectedTime = e.target.value;
-  });
-
-  function clearTimeSelection() {
-    timeSlots.forEach(s => s.classList.remove('selected'));
-    customTimeBtn.classList.remove('selected');
-    customTimeBox.classList.add('hidden');
-    selectedTime = null;
-  }
-
-  // Сохранение новой записи
-  submitBtn.addEventListener('click', () => {
-    if (!selectedTime) {
-      alert('Выберите свободное время записи.');
+      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 10px;">Свободный день</div>';
       return;
     }
 
-    const newBooking = {
-      id: Date.now(),
-      date: selectedDateStr,
-      time: selectedTime,
-      name: clientName.value.trim() || 'Без имени',
-      phone: clientPhone.value.trim() || 'Без телефона',
-      note: bookingNote.value.trim()
-    };
+    dayBookings.forEach(b => {
+      const client = appState.clients.find(c => c.id == b.clientId) || { name: 'Удаленный клиент' };
+      const service = appState.services.find(s => s.id == b.serviceId) || { title: 'Услуга', price: 0 };
 
-    bookings.push(newBooking);
-    saveToStorage();
+      const item = document.createElement('div');
+      item.className = 'list-item';
+      item.innerHTML = `
+        <div>
+          <div style="font-weight:700; color:var(--primary);">${b.time}</div>
+          <div style="font-weight:600;">${escapeHtml(client.name)}</div>
+          <div style="font-size:12px; color:var(--hint);">${escapeHtml(service.title)} • ${service.price} ₽</div>
+        </div>
+        <div>
+          <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px;">
+            <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
+            <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
+            <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
+          </select>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+  }
 
-    // Очищаем форму
-    clientName.value = '';
-    clientPhone.value = '';
-    bookingNote.value = '';
-    clearTimeSelection();
-
-    // Обновляем список записей
-    updateDayView();
-
-    // Синхронизируем с ботом
-    if (tg && tg.sendData) {
-      tg.sendData(JSON.stringify({ action: 'create', booking: newBooking }));
+  function changeStatus(id, newStatus) {
+    const booking = appState.bookings.find(b => b.id === id);
+    if (booking) {
+      booking.status = newStatus;
+      saveBookings();
+      renderSchedule();
     }
-  });
+  }
+
+  // --- МОДАЛКИ И СОХРАНЕНИЕ ---
+  function openNewBookingModal() {
+    const cSelect = document.getElementById('booking-client-select');
+    const sSelect = document.getElementById('booking-service-select');
+
+    cSelect.innerHTML = appState.clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    sSelect.innerHTML = appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price} ₽)</option>`).join('');
+
+    document.getElementById('modal-booking').classList.add('open');
+  }
+
+  function saveBooking() {
+    const clientId = document.getElementById('booking-client-select').value;
+    const serviceId = document.getElementById('booking-service-select').value;
+    const time = document.getElementById('booking-time').value;
+
+    if (!clientId || !serviceId || !time) return alert('Заполните все поля');
+
+    appState.bookings.push({
+      id: Date.now(),
+      date: appState.selectedDate,
+      time: time,
+      clientId: Number(clientId),
+      serviceId: Number(serviceId),
+      status: 'confirmed'
+    });
+
+    saveBookings();
+    closeModals();
+    renderSchedule();
+  }
+
+  function openClientModal() { document.getElementById('modal-client').classList.add('open'); }
+  function saveClient() {
+    const name = document.getElementById('new-client-name').value.trim();
+    const phone = document.getElementById('new-client-phone').value.trim();
+    if (!name) return alert('Введите имя');
+
+    appState.clients.push({ id: Date.now(), name, phone: phone || 'Нет телефона' });
+    saveClients();
+    closeModals();
+    renderClients();
+    document.getElementById('new-client-name').value = '';
+    document.getElementById('new-client-phone').value = '';
+  }
+
+  function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
+  function saveService() {
+    const title = document.getElementById('new-service-title').value.trim();
+    const price = Number(document.getElementById('new-service-price').value);
+    const duration = Number(document.getElementById('new-service-duration').value);
+
+    if (!title || !price) return alert('Заполните название и цену');
+
+    appState.services.push({ id: Date.now(), title, price, duration: duration || 60 });
+    saveServices();
+    closeModals();
+    renderServices();
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+  }
+
+  // --- ОТРЕСОВКА ДРУГИХ ВКЛАДОК ---
+  function renderClients() {
+    const list = document.getElementById('clients-list');
+    list.innerHTML = appState.clients.map(c => `
+      <div class="list-item">
+        <div>
+          <div style="font-weight:600;">${escapeHtml(c.name)}</div>
+          <div style="font-size:12px; color:var(--hint);">${escapeHtml(c.phone)}</div>
+        </div>
+      </div>
+    `).join('') || '<div style="color:var(--hint);">Список пуст</div>';
+  }
+
+  function renderServices() {
+    const list = document.getElementById('services-list');
+    list.innerHTML = appState.services.map(s => `
+      <div class="list-item">
+        <div>
+          <div style="font-weight:600;">${escapeHtml(s.title)}</div>
+          <div style="font-size:12px; color:var(--hint);">${s.duration} мин.</div>
+        </div>
+        <div style="font-weight:700; color:var(--primary);">${s.price} ₽</div>
+      </div>
+    `).join('') || '<div style="color:var(--hint);">Услуг нет</div>';
+  }
+
+  function renderAnalytics() {
+    const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
+    
+    let totalRevenue = 0;
+    completedToday.forEach(b => {
+      const s = appState.services.find(serv => serv.id == b.serviceId);
+      if (s) totalRevenue += s.price;
+    });
+
+    document.getElementById('today-revenue').innerText = `${totalRevenue} ₽`;
+    document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
+    document.getElementById('stat-clients-count').innerText = appState.clients.length;
+    document.getElementById('stat-services-count').innerText = appState.services.length;
+  }
 
   function escapeHtml(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   // Старт
-  generateDaysRibbon();
-  updateDayView();
+  renderDaysRibbon();
+  renderSchedule();
 </script>
-
 </body>
 </html>
