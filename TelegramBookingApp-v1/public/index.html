@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Beauty Agent Mini</title>
+  <title>Beauty Agent Pro</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -14,7 +14,6 @@
       --primary: var(--tg-theme-button-color, #007aff);
       --primary-text: var(--tg-theme-button-text-color, #ffffff);
       --success: #34c759;
-      --warning: #ff9500;
       --danger: #ff3b30;
       --radius: 14px;
     }
@@ -36,7 +35,6 @@
       overflow: hidden;
     }
 
-    /* Шапка */
     .app-header {
       background: var(--card-bg);
       padding: 12px 16px;
@@ -46,7 +44,6 @@
       border-bottom: 1px solid rgba(0,0,0,0.06);
     }
 
-    /* Основной контент */
     .app-content {
       flex: 1;
       overflow-y: auto;
@@ -54,12 +51,9 @@
       padding-bottom: 80px;
     }
 
-    /* Таббар (Нижнее меню) */
     .tab-bar {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       height: 60px;
       background: var(--card-bg);
       display: flex;
@@ -84,11 +78,8 @@
       font-weight: 600;
     }
 
-    .tab-item .icon {
-      font-size: 18px;
-    }
+    .tab-item .icon { font-size: 18px; }
 
-    /* Карточки */
     .card {
       background: var(--card-bg);
       padding: 14px;
@@ -108,7 +99,6 @@
       align-items: center;
     }
 
-    /* Лента дней */
     .days-ribbon {
       display: flex;
       gap: 8px;
@@ -135,7 +125,6 @@
     .day-chip .wk { font-size: 10px; text-transform: uppercase; opacity: 0.8; }
     .day-chip .num { font-size: 16px; font-weight: 700; margin: 2px 0; }
 
-    /* Элементы списков */
     .list-item {
       display: flex;
       justify-content: space-between;
@@ -146,18 +135,17 @@
       margin-bottom: 8px;
     }
 
-    .badge {
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 18px;
+      font-weight: bold;
+      padding: 4px 8px;
+      cursor: pointer;
+      margin-left: 8px;
     }
 
-    .badge-confirmed { background: rgba(0,122,255,0.15); color: var(--primary); }
-    .badge-completed { background: rgba(52,199,89,0.15); color: var(--success); }
-    .badge-canceled { background: rgba(255,59,48,0.15); color: var(--danger); }
-
-    /* Поля и Кнопки */
     .input-field, select {
       width: 100%;
       padding: 12px;
@@ -193,7 +181,6 @@
       width: auto;
     }
 
-    /* Модальное окно */
     .modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -230,7 +217,7 @@
 
   <div class="app-content">
     
-    <!-- ТАБ 1: ЗАПИСИ (ЖУРНАЛ) -->
+    <!-- ТАБ 1: ЗАПИСИ -->
     <div id="tab-schedule">
       <div class="card">
         <div class="card-title">Дата</div>
@@ -271,14 +258,14 @@
     <!-- ТАБ 4: АНАЛИТИКА -->
     <div id="tab-analytics" class="hidden">
       <div class="card">
-        <div class="card-title">Финансы за сегодня</div>
+        <div class="card-title">Доход за сегодня</div>
         <h2 id="today-revenue" style="color: var(--success); margin-bottom: 4px;">0 ₽</h2>
         <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
       </div>
       <div class="card">
-        <div class="card-title">Всего в базе</div>
+        <div class="card-title">База</div>
         <div style="display: flex; justify-content: space-between; font-size: 14px;">
-          <span>Клиентов: <b id="stat-clients-count">0</b></span>
+          <span>Клиентов в базе: <b id="stat-clients-count">0</b></span>
           <span>Услуг: <b id="stat-services-count">0</b></span>
         </div>
       </div>
@@ -286,7 +273,7 @@
 
   </div>
 
-  <!-- НИЖНЕЕ МЕНЮ -->
+  <!-- ТАББАР -->
   <div class="tab-bar">
     <div class="tab-item active" onclick="switchTab('schedule', 'Журнал записей')">
       <span class="icon">📅</span>
@@ -306,43 +293,46 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: НОВАЯ ЗАПИСЬ -->
+  <!-- МОДАЛКА: ЗАПИСЬ -->
   <div class="modal" id="modal-booking">
     <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Новая запись</h3>
+      <h3 style="margin-bottom: 14px;">Быстрая запись</h3>
       
-      <label class="card-title">Клиент</label>
-      <select id="booking-client-select"></select>
+      <label class="card-title">Имя клиента (необязательно)</label>
+      <input type="text" id="booking-client-input" class="input-field" placeholder="Введите имя или выберите из списка..." list="clients-datalist">
+      <datalist id="clients-datalist"></datalist>
 
-      <label class="card-title">Услуга</label>
+      <label class="card-title">Телефон (необязательно)</label>
+      <input type="tel" id="booking-phone-input" class="input-field" placeholder="Номер телефона">
+
+      <label class="card-title">Услуга (необязательно)</label>
       <select id="booking-service-select"></select>
 
       <label class="card-title">Время</label>
       <input type="time" id="booking-time" class="input-field" value="10:00">
 
-      <button class="btn" onclick="saveBooking()">Записать</button>
+      <button class="btn" onclick="saveBooking()">Сохранить запись</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: НОВЫЙ КЛИЕНТ -->
+  <!-- МОДАЛКА: КЛИЕНТ -->
   <div class="modal" id="modal-client">
     <div class="modal-content">
       <h3 style="margin-bottom: 14px;">Новый клиент</h3>
-      <input type="text" id="new-client-name" class="input-field" placeholder="Имя Фамилия">
-      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
+      <input type="text" id="new-client-name" class="input-field" placeholder="Имя (необязательно)">
+      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон (необязательно)">
       <button class="btn" onclick="saveClient()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: НОВАЯ УСЛУГА -->
+  <!-- МОДАЛКА: УСЛУГА -->
   <div class="modal" id="modal-service">
     <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Добавить услугу</h3>
-      <input type="text" id="new-service-title" class="input-field" placeholder="Название (например: Маникюр)">
-      <input type="number" id="new-service-price" class="input-field" placeholder="Стоимость (₽)">
-      <input type="number" id="new-service-duration" class="input-field" placeholder="Длительность (мин)" value="60">
+      <h3 style="margin-bottom: 14px;">Новая услуга</h3>
+      <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
+      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (₽, необязательно)">
       <button class="btn" onclick="saveService()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
     </div>
@@ -352,7 +342,6 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Единое хранилище данных приложения
   let appState = {
     selectedDate: getTodayStr(),
     clients: JSON.parse(localStorage.getItem('ba_clients') || '[]'),
@@ -360,22 +349,6 @@
     bookings: JSON.parse(localStorage.getItem('ba_bookings') || '[]')
   };
 
-  // Дефолтные данные при первом запуске, чтобы экран не был пустым
-  if (appState.services.length === 0) {
-    appState.services = [
-      { id: 1, title: "Маникюр + Гель-лак", price: 2000, duration: 90 },
-      { id: 2, title: "Стрижка и укладка", price: 2500, duration: 60 }
-    ];
-    saveServices();
-  }
-  if (appState.clients.length === 0) {
-    appState.clients = [
-      { id: 1, name: "Анна Смирнова", phone: "+7 (999) 000-11-22" }
-    ];
-    saveClients();
-  }
-
-  // --- НАВИГАЦИЯ (ТАБЫ) ---
   function switchTab(tabName, title) {
     document.querySelectorAll('.app-content > div').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
@@ -392,7 +365,6 @@
     if (tabName === 'analytics') renderAnalytics();
   }
 
-  // --- ХРАНИЛИЩЕ ---
   function saveBookings() { localStorage.setItem('ba_bookings', JSON.stringify(appState.bookings)); }
   function saveClients() { localStorage.setItem('ba_clients', JSON.stringify(appState.clients)); }
   function saveServices() { localStorage.setItem('ba_services', JSON.stringify(appState.services)); }
@@ -402,7 +374,7 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // --- ОТРЕСОВКА РАСПИСАНИЯ ---
+  // --- ДНИ ---
   function renderDaysRibbon() {
     const container = document.getElementById('days-container');
     container.innerHTML = '';
@@ -426,37 +398,36 @@
     }
   }
 
+  // --- РАСПИСАНИЕ ---
   function renderSchedule() {
     const list = document.getElementById('schedule-list');
     list.innerHTML = '';
 
     const dayBookings = appState.bookings
       .filter(b => b.date === appState.selectedDate)
-      .sort((a, b) => a.time.localeCompare(b.time));
+      .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
 
     if (dayBookings.length === 0) {
-      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 10px;">Свободный день</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 10px;">Нет записей на этот день</div>';
       return;
     }
 
     dayBookings.forEach(b => {
-      const client = appState.clients.find(c => c.id == b.clientId) || { name: 'Удаленный клиент' };
-      const service = appState.services.find(s => s.id == b.serviceId) || { title: 'Услуга', price: 0 };
-
       const item = document.createElement('div');
       item.className = 'list-item';
       item.innerHTML = `
         <div>
-          <div style="font-weight:700; color:var(--primary);">${b.time}</div>
-          <div style="font-weight:600;">${escapeHtml(client.name)}</div>
-          <div style="font-size:12px; color:var(--hint);">${escapeHtml(service.title)} • ${service.price} ₽</div>
+          <div style="font-weight:700; color:var(--primary);">${b.time || 'Без времени'}</div>
+          <div style="font-weight:600;">${escapeHtml(b.clientName || 'Гость')}</div>
+          <div style="font-size:12px; color:var(--hint);">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' ₽' : ''}</div>
         </div>
-        <div>
+        <div style="display:flex; align-items:center;">
           <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px;">
             <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
             <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
             <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
           </select>
+          <button class="delete-btn" onclick="deleteBooking(${b.id})">&times;</button>
         </div>
       `;
       list.appendChild(item);
@@ -472,30 +443,51 @@
     }
   }
 
-  // --- МОДАЛКИ И СОХРАНЕНИЕ ---
+  function deleteBooking(id) {
+    appState.bookings = appState.bookings.filter(b => b.id !== id);
+    saveBookings();
+    renderSchedule();
+  }
+
+  // --- СОЗДАНИЕ ЗАПИСИ ---
   function openNewBookingModal() {
-    const cSelect = document.getElementById('booking-client-select');
+    const datalist = document.getElementById('clients-datalist');
+    datalist.innerHTML = appState.clients.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+
     const sSelect = document.getElementById('booking-service-select');
+    sSelect.innerHTML = `<option value="">-- Без услуги --</option>` + 
+      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price || 0} ₽)</option>`).join('');
 
-    cSelect.innerHTML = appState.clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-    sSelect.innerHTML = appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price} ₽)</option>`).join('');
-
+    document.getElementById('booking-client-input').value = '';
+    document.getElementById('booking-phone-input').value = '';
     document.getElementById('modal-booking').classList.add('open');
   }
 
   function saveBooking() {
-    const clientId = document.getElementById('booking-client-select').value;
+    const clientName = document.getElementById('booking-client-input').value.trim() || 'Гость';
+    const phone = document.getElementById('booking-phone-input').value.trim();
     const serviceId = document.getElementById('booking-service-select').value;
     const time = document.getElementById('booking-time').value;
 
-    if (!clientId || !serviceId || !time) return alert('Заполните все поля');
+    let serviceTitle = 'Без услуги';
+    let price = 0;
+
+    if (serviceId) {
+      const s = appState.services.find(serv => serv.id == serviceId);
+      if (s) {
+        serviceTitle = s.title;
+        price = s.price || 0;
+      }
+    }
 
     appState.bookings.push({
       id: Date.now(),
       date: appState.selectedDate,
-      time: time,
-      clientId: Number(clientId),
-      serviceId: Number(serviceId),
+      time: time || '10:00',
+      clientName: clientName,
+      phone: phone,
+      serviceTitle: serviceTitle,
+      price: price,
       status: 'confirmed'
     });
 
@@ -504,13 +496,13 @@
     renderSchedule();
   }
 
+  // --- КЛИЕНТЫ ---
   function openClientModal() { document.getElementById('modal-client').classList.add('open'); }
   function saveClient() {
-    const name = document.getElementById('new-client-name').value.trim();
-    const phone = document.getElementById('new-client-phone').value.trim();
-    if (!name) return alert('Введите имя');
+    const name = document.getElementById('new-client-name').value.trim() || 'Гость';
+    const phone = document.getElementById('new-client-phone').value.trim() || 'Нет телефона';
 
-    appState.clients.push({ id: Date.now(), name, phone: phone || 'Нет телефона' });
+    appState.clients.push({ id: Date.now(), name, phone });
     saveClients();
     closeModals();
     renderClients();
@@ -518,25 +510,12 @@
     document.getElementById('new-client-phone').value = '';
   }
 
-  function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
-  function saveService() {
-    const title = document.getElementById('new-service-title').value.trim();
-    const price = Number(document.getElementById('new-service-price').value);
-    const duration = Number(document.getElementById('new-service-duration').value);
-
-    if (!title || !price) return alert('Заполните название и цену');
-
-    appState.services.push({ id: Date.now(), title, price, duration: duration || 60 });
-    saveServices();
-    closeModals();
-    renderServices();
+  function deleteClient(id) {
+    appState.clients = appState.clients.filter(c => c.id !== id);
+    saveClients();
+    renderClients();
   }
 
-  function closeModals() {
-    document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
-  }
-
-  // --- ОТРЕСОВКА ДРУГИХ ВКЛАДОК ---
   function renderClients() {
     const list = document.getElementById('clients-list');
     list.innerHTML = appState.clients.map(c => `
@@ -545,8 +524,29 @@
           <div style="font-weight:600;">${escapeHtml(c.name)}</div>
           <div style="font-size:12px; color:var(--hint);">${escapeHtml(c.phone)}</div>
         </div>
+        <button class="delete-btn" onclick="deleteClient(${c.id})">&times;</button>
       </div>
-    `).join('') || '<div style="color:var(--hint);">Список пуст</div>';
+    `).join('') || '<div style="color:var(--hint); text-align:center;">Список клиентов пуст</div>';
+  }
+
+  // --- УСЛУГИ ---
+  function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
+  function saveService() {
+    const title = document.getElementById('new-service-title').value.trim() || 'Без названия';
+    const price = Number(document.getElementById('new-service-price').value) || 0;
+
+    appState.services.push({ id: Date.now(), title, price });
+    saveServices();
+    closeModals();
+    renderServices();
+    document.getElementById('new-service-title').value = '';
+    document.getElementById('new-service-price').value = '';
+  }
+
+  function deleteService(id) {
+    appState.services = appState.services.filter(s => s.id !== id);
+    saveServices();
+    renderServices();
   }
 
   function renderServices() {
@@ -555,21 +555,19 @@
       <div class="list-item">
         <div>
           <div style="font-weight:600;">${escapeHtml(s.title)}</div>
-          <div style="font-size:12px; color:var(--hint);">${s.duration} мин.</div>
         </div>
-        <div style="font-weight:700; color:var(--primary);">${s.price} ₽</div>
+        <div style="display:flex; align-items:center;">
+          <span style="font-weight:700; color:var(--primary);">${s.price || 0} ₽</span>
+          <button class="delete-btn" onclick="deleteService(${s.id})">&times;</button>
+        </div>
       </div>
-    `).join('') || '<div style="color:var(--hint);">Услуг нет</div>';
+    `).join('') || '<div style="color:var(--hint); text-align:center;">Каталог услуг пуст</div>';
   }
 
+  // --- АНАЛИТИКА ---
   function renderAnalytics() {
     const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
-    
-    let totalRevenue = 0;
-    completedToday.forEach(b => {
-      const s = appState.services.find(serv => serv.id == b.serviceId);
-      if (s) totalRevenue += s.price;
-    });
+    const totalRevenue = completedToday.reduce((sum, b) => sum + (b.price || 0), 0);
 
     document.getElementById('today-revenue').innerText = `${totalRevenue} ₽`;
     document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
@@ -577,11 +575,14 @@
     document.getElementById('stat-services-count').innerText = appState.services.length;
   }
 
+  function closeModals() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+  }
+
   function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Старт
   renderDaysRibbon();
   renderSchedule();
 </script>
