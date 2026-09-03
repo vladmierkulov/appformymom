@@ -211,13 +211,6 @@
       flex: 0 0 100px;
     }
 
-    .error-msg {
-      color: var(--danger);
-      font-size: 12px;
-      margin-bottom: 6px;
-      display: block;
-    }
-
     .hidden { display: none !important; }
   </style>
 </head>
@@ -229,9 +222,8 @@
   <!-- Данные клиента -->
   <div class="card">
     <div class="card-title">1. Данные клиента</div>
-    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента">
-    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон клиента *">
-    <span class="error-msg hidden" id="phone-error">Введите корректный номер (от 10 цифр)</span>
+    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента (необязательно)">
+    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон клиента (необязательно)">
     <input type="text" id="booking-note" class="input-field" placeholder="Заметка / Процедура (необязательно)">
   </div>
 
@@ -269,7 +261,6 @@
 
   <!-- Действия -->
   <div class="actions-group">
-    <!-- Кнопка "Сбросить" просто очищает поля БЕЗ вызова ошибок -->
     <button class="btn btn-secondary" id="reset-btn">Сбросить</button>
     <button class="btn" id="submit-btn">Записать</button>
   </div>
@@ -291,7 +282,6 @@
   const clientName = document.getElementById('client-name');
   const clientPhone = document.getElementById('client-phone');
   const bookingNote = document.getElementById('booking-note');
-  const phoneError = document.getElementById('phone-error');
   
   const resetBtn = document.getElementById('reset-btn');
   const submitBtn = document.getElementById('submit-btn');
@@ -299,7 +289,31 @@
   const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
-  // Лента на 30 дней вперед
+  // Автоматическое сохранение/восстановление черновика текстовых полей
+  function loadDraft() {
+    clientName.value = localStorage.getItem('draft_name') || '';
+    clientPhone.value = localStorage.getItem('draft_phone') || '';
+    bookingNote.value = localStorage.getItem('draft_note') || '';
+  }
+
+  [clientName, clientPhone, bookingNote].forEach(input => {
+    input.addEventListener('input', () => {
+      localStorage.setItem('draft_name', clientName.value);
+      localStorage.setItem('draft_phone', clientPhone.value);
+      localStorage.setItem('draft_note', bookingNote.value);
+    });
+  });
+
+  function clearDraft() {
+    localStorage.removeItem('draft_name');
+    localStorage.removeItem('draft_phone');
+    localStorage.removeItem('draft_note');
+    clientName.value = '';
+    clientPhone.value = '';
+    bookingNote.value = '';
+  }
+
+  // Генерация дней
   function generateDaysRibbon() {
     daysContainer.innerHTML = '';
     const today = new Date();
@@ -330,13 +344,16 @@
         document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
         selectedDateStr = fullDateStr;
+        
+        // СБРОС ВРЕМЕНИ ПРИ СМЕНЕ ДНЯ (решает проблему подсветки старого времени)
+        clearTimeSelection();
       });
 
       daysContainer.appendChild(chip);
     }
   }
 
-  // Выбор стандартного слота времени
+  // Выбор времени
   timeSlots.forEach(slot => {
     slot.addEventListener('click', () => {
       clearTimeSelection();
@@ -345,7 +362,6 @@
     });
   });
 
-  // Выбор своего времени
   customTimeBtn.addEventListener('click', () => {
     clearTimeSelection();
     customTimeBtn.classList.add('selected');
@@ -364,53 +380,43 @@
     selectedTime = null;
   }
 
-  // КНОПКА СБРОСИТЬ — очищает поля без каких-либо проверок
+  // Кнопка «Сбросить»
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    clientName.value = '';
-    clientPhone.value = '';
-    bookingNote.value = '';
-    phoneError.classList.add('hidden');
-    clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+    clearDraft();
     clearTimeSelection();
     generateDaysRibbon();
   });
 
-  // КНОПКА ЗАПИСАТЬ — Проверка телефона ТОЛЬКО здесь
+  // Кнопка «Записать»
   submitBtn.addEventListener('click', () => {
-    const rawPhone = clientPhone.value.replace(/\D/g, '');
-    
-    if (rawPhone.length < 10) {
-      phoneError.classList.remove('hidden');
-      clientPhone.style.borderColor = 'var(--danger)';
-      clientPhone.focus();
-      return;
-    }
-
     if (!selectedTime) {
       alert('Пожалуйста, выберите время записи.');
       return;
     }
 
-    phoneError.classList.add('hidden');
-    clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
-
     const payload = {
       role: 'master',
       client_name: clientName.value.trim() || 'Без имени',
-      client_phone: clientPhone.value.trim(),
+      client_phone: clientPhone.value.trim() || 'Не указан',
       note: bookingNote.value.trim(),
       date: selectedDateStr,
       time: selectedTime
     };
 
+    // Очищаем черновик после успешной отправки
+    clearDraft();
+
     if (tg && tg.sendData) {
       tg.sendData(JSON.stringify(payload));
     } else {
-      alert('Запись создана в журнале:\n' + JSON.stringify(payload, null, 2));
+      alert('Запись создана:\n' + JSON.stringify(payload, null, 2));
+      clearTimeSelection();
     }
   });
 
+  // Старт
+  loadDraft();
   generateDaysRibbon();
 </script>
 
