@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Запись клиента (для мастера)</title>
+  <title>Журнал записей мастера</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -40,17 +40,15 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      padding-bottom: 20px;
+      padding-bottom: 30px;
     }
 
     .header-title {
       font-size: 20px;
       font-weight: 700;
       text-align: center;
-      margin-bottom: 4px;
     }
 
-    /* Карточки */
     .card {
       background: var(--card-bg);
       padding: 14px 16px;
@@ -65,23 +63,9 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 10px;
-    }
-
-    /* Поля ввода */
-    .input-field {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 15px;
-      outline: none;
-      margin-bottom: 8px;
-    }
-
-    .input-field:focus {
-      border-color: var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     /* Лента дней */
@@ -95,9 +79,7 @@
       scrollbar-width: none;
     }
 
-    .days-ribbon::-webkit-scrollbar {
-      display: none;
-    }
+    .days-ribbon::-webkit-scrollbar { display: none; }
 
     .day-chip {
       flex: 0 0 62px;
@@ -139,6 +121,74 @@
       color: rgba(255, 255, 255, 0.85);
     }
 
+    /* Список существующих записей */
+    .bookings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .booking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 10px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .booking-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .booking-time-badge {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--primary);
+    }
+
+    .booking-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .booking-sub {
+      font-size: 12px;
+      color: var(--hint);
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .empty-state {
+      font-size: 13px;
+      color: var(--hint);
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* Поля ввода */
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 8px;
+    }
+
     /* Сетка времени */
     .time-grid {
       display: grid;
@@ -163,6 +213,14 @@
       color: var(--primary-text);
     }
 
+    .time-slot.occupied {
+      background: rgba(255, 59, 48, 0.1);
+      color: var(--danger);
+      text-decoration: line-through;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
     .time-slot.custom-btn {
       background: rgba(0, 122, 255, 0.1);
       color: var(--primary);
@@ -184,15 +242,9 @@
       width: 100%;
     }
 
-    /* Кнопки действий */
-    .actions-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
+    /* Кнопка */
     .btn {
-      flex: 1;
+      width: 100%;
       padding: 14px;
       border: none;
       border-radius: var(--radius);
@@ -202,13 +254,7 @@
       background-color: var(--primary);
       color: var(--primary-text);
       transition: opacity 0.2s;
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: var(--hint);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      flex: 0 0 100px;
+      margin-top: 6px;
     }
 
     .hidden { display: none !important; }
@@ -217,25 +263,31 @@
 <body>
 
 <div class="container">
-  <h2 class="header-title">Новая запись</h2>
+  <h2 class="header-title">Журнал записей</h2>
 
-  <!-- Данные клиента -->
+  <!-- 1. Выбор даты -->
   <div class="card">
-    <div class="card-title">1. Данные клиента</div>
-    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента (необязательно)">
-    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон клиента (необязательно)">
-    <input type="text" id="booking-note" class="input-field" placeholder="Заметка / Процедура (необязательно)">
-  </div>
-
-  <!-- Выбор даты -->
-  <div class="card">
-    <div class="card-title">2. Дата записи</div>
+    <div class="card-title">1. Выберите дату</div>
     <div class="days-ribbon" id="days-container"></div>
   </div>
 
-  <!-- Время начиная с 07:00 -->
+  <!-- 2. Записи на этот день -->
   <div class="card">
-    <div class="card-title">3. Время записи</div>
+    <div class="card-title">
+      <span>Записи на <span id="selected-date-title">...</span></span>
+      <span id="bookings-count" style="color: var(--primary);">0</span>
+    </div>
+    <div class="bookings-list" id="bookings-list"></div>
+  </div>
+
+  <!-- 3. Форма добавления записи -->
+  <div class="card">
+    <div class="card-title">3. Новая запись на этот день</div>
+    <input type="text" id="client-name" class="input-field" placeholder="Имя клиента">
+    <input type="tel" id="client-phone" class="input-field" placeholder="Телефон">
+    <input type="text" id="booking-note" class="input-field" placeholder="Услуга / Заметка">
+
+    <div class="card-title" style="margin-top: 8px;">Время записи:</div>
     <div class="time-grid" id="time-container">
       <div class="time-slot" data-time="07:00">07:00</div>
       <div class="time-slot" data-time="08:00">08:00</div>
@@ -257,12 +309,8 @@
     <div class="custom-time-wrapper hidden" id="custom-time-box">
       <input type="time" id="custom-time-input" value="07:30">
     </div>
-  </div>
 
-  <!-- Действия -->
-  <div class="actions-group">
-    <button class="btn btn-secondary" id="reset-btn">Сбросить</button>
-    <button class="btn" id="submit-btn">Записать</button>
+    <button class="btn" id="submit-btn">Сохранить запись</button>
   </div>
 </div>
 
@@ -270,6 +318,8 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
+  // Локальная база данных записей
+  let bookings = JSON.parse(localStorage.getItem('master_journal_bookings') || '[]');
   let selectedDateStr = null;
   let selectedTime = null;
 
@@ -282,38 +332,21 @@
   const clientName = document.getElementById('client-name');
   const clientPhone = document.getElementById('client-phone');
   const bookingNote = document.getElementById('booking-note');
-  
-  const resetBtn = document.getElementById('reset-btn');
   const submitBtn = document.getElementById('submit-btn');
+
+  const bookingsList = document.getElementById('bookings-list');
+  const bookingsCount = document.getElementById('bookings-count');
+  const selectedDateTitle = document.getElementById('selected-date-title');
 
   const weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const months = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
-  // Автоматическое сохранение/восстановление черновика текстовых полей
-  function loadDraft() {
-    clientName.value = localStorage.getItem('draft_name') || '';
-    clientPhone.value = localStorage.getItem('draft_phone') || '';
-    bookingNote.value = localStorage.getItem('draft_note') || '';
+  // Сохранение в память
+  function saveToStorage() {
+    localStorage.setItem('master_journal_bookings', JSON.stringify(bookings));
   }
 
-  [clientName, clientPhone, bookingNote].forEach(input => {
-    input.addEventListener('input', () => {
-      localStorage.setItem('draft_name', clientName.value);
-      localStorage.setItem('draft_phone', clientPhone.value);
-      localStorage.setItem('draft_note', bookingNote.value);
-    });
-  });
-
-  function clearDraft() {
-    localStorage.removeItem('draft_name');
-    localStorage.removeItem('draft_phone');
-    localStorage.removeItem('draft_note');
-    clientName.value = '';
-    clientPhone.value = '';
-    bookingNote.value = '';
-  }
-
-  // Генерация дней
+  // Создание ленты дней
   function generateDaysRibbon() {
     daysContainer.innerHTML = '';
     const today = new Date();
@@ -335,9 +368,11 @@
         <div class="month-name">${months[d.getMonth()]}</div>
       `;
 
-      if (i === 0) {
+      if (i === 0 && !selectedDateStr) {
         chip.classList.add('selected');
         selectedDateStr = fullDateStr;
+      } else if (selectedDateStr === fullDateStr) {
+        chip.classList.add('selected');
       }
 
       chip.addEventListener('click', () => {
@@ -345,17 +380,72 @@
         chip.classList.add('selected');
         selectedDateStr = fullDateStr;
         
-        // СБРОС ВРЕМЕНИ ПРИ СМЕНЕ ДНЯ (решает проблему подсветки старого времени)
         clearTimeSelection();
+        updateDayView();
       });
 
       daysContainer.appendChild(chip);
     }
   }
 
-  // Выбор времени
+  // Обновление отображения текущего выбранного дня
+  function updateDayView() {
+    const parts = selectedDateStr.split('-');
+    selectedDateTitle.innerText = `${parts[2]}.${parts[1]}`;
+
+    // Фильтруем записи для выбранного дня
+    const dayBookings = bookings
+      .filter(b => b.date === selectedDateStr)
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    bookingsCount.innerText = dayBookings.length;
+    bookingsList.innerHTML = '';
+
+    if (dayBookings.length === 0) {
+      bookingsList.innerHTML = '<div class="empty-state">Записей на этот день пока нет</div>';
+    } else {
+      dayBookings.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'booking-item';
+        div.innerHTML = `
+          <div class="booking-info">
+            <span class="booking-time-badge">${item.time}</span>
+            <span class="booking-name">${escapeHtml(item.name)}</span>
+            <span class="booking-sub">${escapeHtml(item.phone)} ${item.note ? '• ' + escapeHtml(item.note) : ''}</span>
+          </div>
+          <button class="delete-btn" title="Удалить запись">&times;</button>
+        `;
+
+        div.querySelector('.delete-btn').addEventListener('click', () => {
+          deleteBooking(item.id);
+        });
+
+        bookingsList.appendChild(div);
+      });
+    }
+
+    // Блокируем занятые временные слоты
+    const takenTimes = dayBookings.map(b => b.time);
+    timeSlots.forEach(slot => {
+      if (takenTimes.includes(slot.dataset.time)) {
+        slot.classList.add('occupied');
+      } else {
+        slot.classList.remove('occupied');
+      }
+    });
+  }
+
+  function deleteBooking(id) {
+    bookings = bookings.filter(b => b.id !== id);
+    saveToStorage();
+    updateDayView();
+  }
+
+  // Выбор слота времени
   timeSlots.forEach(slot => {
     slot.addEventListener('click', () => {
+      if (slot.classList.contains('occupied')) return;
+      
       clearTimeSelection();
       slot.classList.add('selected');
       selectedTime = slot.dataset.time;
@@ -380,44 +470,47 @@
     selectedTime = null;
   }
 
-  // Кнопка «Сбросить»
-  resetBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    clearDraft();
-    clearTimeSelection();
-    generateDaysRibbon();
-  });
-
-  // Кнопка «Записать»
+  // Сохранение новой записи
   submitBtn.addEventListener('click', () => {
     if (!selectedTime) {
-      alert('Пожалуйста, выберите время записи.');
+      alert('Выберите свободное время записи.');
       return;
     }
 
-    const payload = {
-      role: 'master',
-      client_name: clientName.value.trim() || 'Без имени',
-      client_phone: clientPhone.value.trim() || 'Не указан',
-      note: bookingNote.value.trim(),
+    const newBooking = {
+      id: Date.now(),
       date: selectedDateStr,
-      time: selectedTime
+      time: selectedTime,
+      name: clientName.value.trim() || 'Без имени',
+      phone: clientPhone.value.trim() || 'Без телефона',
+      note: bookingNote.value.trim()
     };
 
-    // Очищаем черновик после успешной отправки
-    clearDraft();
+    bookings.push(newBooking);
+    saveToStorage();
 
+    // Очищаем форму
+    clientName.value = '';
+    clientPhone.value = '';
+    bookingNote.value = '';
+    clearTimeSelection();
+
+    // Обновляем список записей
+    updateDayView();
+
+    // Синхронизируем с ботом
     if (tg && tg.sendData) {
-      tg.sendData(JSON.stringify(payload));
-    } else {
-      alert('Запись создана:\n' + JSON.stringify(payload, null, 2));
-      clearTimeSelection();
+      tg.sendData(JSON.stringify({ action: 'create', booking: newBooking }));
     }
   });
 
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   // Старт
-  loadDraft();
   generateDaysRibbon();
+  updateDayView();
 </script>
 
 </body>
