@@ -1,1 +1,165 @@
-:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--tg-theme-text-color,#172033);background:var(--tg-theme-bg-color,#f4f6fb)}*{box-sizing:border-box}body{margin:0}main{max-width:600px;margin:auto;padding:20px}header{display:flex;justify-content:space-between;align-items:center}.eyebrow{margin:0;color:var(--tg-theme-hint-color,#7a8495);font-weight:700}h1{margin:4px 0 20px;font-size:30px}button{border:0;border-radius:12px;padding:12px;background:var(--tg-theme-secondary-bg-color,#e8ecf4);color:inherit;font:inherit;font-weight:700;cursor:pointer}.picker{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;margin-bottom:14px}.picker input{border:0;border-radius:12px;padding:12px;background:var(--tg-theme-secondary-bg-color,#e8ecf4);color:inherit;text-align:center;font:inherit}.summary{padding:14px;border-radius:16px;background:linear-gradient(135deg,#397bff,#8659ff);color:#fff;margin-bottom:14px}.summary p{margin:4px 0}.slot{display:flex;align-items:center;gap:12px;padding:14px;margin:8px 0;border-radius:14px;background:var(--tg-theme-secondary-bg-color,#fff)}.slot .time{font-variant-numeric:tabular-nums;color:var(--tg-theme-hint-color,#6e7785);width:48px}.slot .name{flex:1}.slot .empty{color:var(--tg-theme-hint-color,#6e7785)}.primary{background:var(--tg-theme-button-color,#397bff);color:var(--tg-theme-button-text-color,#fff)}#add{width:100%;margin-top:12px}.danger{color:#d63939}dialog{width:min(92vw,420px);border:0;border-radius:20px;padding:20px;background:var(--tg-theme-bg-color,#fff);color:inherit;box-shadow:0 10px 40px #0004}dialog::backdrop{background:#0007}dialog form{display:grid;gap:12px}label{display:grid;gap:6px;font-weight:650}input,textarea{width:100%;border:1px solid #d5dce8;border-radius:10px;padding:11px;background:transparent;color:inherit;font:inherit}.toggle{display:flex;align-items:center}.toggle input{width:auto}menu{display:flex;justify-content:flex-end;gap:8px;margin:8px 0 0;padding:0}.hint{font-size:13px;color:var(--tg-theme-hint-color,#6e7785);line-height:1.4}
+:root {
+  /* Автоматическая адаптация под тему Telegram */
+  --bg-color: var(--tg-theme-bg-color, #f4f4f5);
+  --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+  --text-color: var(--tg-theme-text-color, #1c1c1e);
+  --hint-color: var(--tg-theme-hint-color, #8e8e93);
+  --button-color: var(--tg-theme-button-color, #007aff);
+  --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+  --danger-color: #ff3b30;
+  --border-radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.header h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--hint-color);
+  margin-top: 4px;
+}
+
+/* Карточки */
+.card {
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Поля ввода и селекты */
+label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hint-color);
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--button-color);
+}
+
+/* Кнопки */
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--button-color);
+  color: var(--button-text-color);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--hint-color);
+}
+
+.full-width {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Модальное окно */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 360px;
+  animation: slideUp 0.25s ease-out;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Ошибки и утилиты */
+.hidden {
+  display: none !important;
+}
+
+.error-msg {
+  color: var(--danger-color);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
