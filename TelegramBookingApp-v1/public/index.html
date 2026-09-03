@@ -4,19 +4,187 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Запись на прием</title>
-  <link rel="stylesheet" href="style.css">
+  
   <!-- Подключение Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* Переменные с резервными значениями (работают и в Telegram, и в обычном браузере) */
+    :root {
+      --bg-color: var(--tg-theme-bg-color, #efeff4);
+      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text-color: var(--tg-theme-text-color, #000000);
+      --hint-color: var(--tg-theme-hint-color, #8e8e93);
+      --button-color: var(--tg-theme-button-color, #007aff);
+      --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+      --danger-color: #ff3b30;
+      --border-radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .header h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--hint-color);
+      margin-top: 4px;
+    }
+
+    /* Карточки */
+    .card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Поля ввода и селекты */
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--hint-color);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-size: 15px;
+      outline: none;
+      margin-top: 4px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--button-color);
+    }
+
+    /* Кнопки */
+    .btn {
+      padding: 14px;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--button-color);
+      color: var(--button-text-color);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--hint-color);
+    }
+
+    .full-width {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    /* Модальное окно */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* Утилиты */
+    .hidden {
+      display: none !important;
+    }
+
+    .error-msg {
+      color: var(--danger-color);
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+  </style>
 </head>
 <body>
+
   <div class="container">
     <header class="header">
       <h2>Онлайн-запись</h2>
-      <p class="subtitle">Выберите услугу и удобное время</p>
+      <p class="subtitle">Выберите услугу и время</p>
     </header>
 
-    <!-- Список услуг -->
-    <section class="card">
+    <!-- Выбор услуги -->
+    <div class="card">
       <label for="service-select">Услуга</label>
       <select id="service-select">
         <option value="" disabled selected>Выберите услугу...</option>
@@ -24,10 +192,10 @@
         <option value="Окрашивание">Окрашивание</option>
         <option value="Маникюр">Маникюр</option>
       </select>
-    </section>
+    </div>
 
-    <!-- Дата и время -->
-    <section class="card grid-2">
+    <!-- Выбор даты и времени -->
+    <div class="card grid-2">
       <div>
         <label for="booking-date">Дата</label>
         <input type="date" id="booking-date">
@@ -36,16 +204,16 @@
         <label for="booking-time">Время</label>
         <input type="time" id="booking-time">
       </div>
-    </section>
+    </div>
 
-    <!-- Модальное окно / Секция ввода данных -->
+    <!-- Модальное окно записи -->
     <div id="booking-modal" class="modal hidden">
       <div class="modal-content card">
-        <h3>Детали записи</h3>
-        <p class="info-text">Укажите ваш номер телефона для подтверждения</p>
+        <h3>Подтверждение</h3>
+        <p class="subtitle">Введите ваш номер телефона</p>
         
-        <div class="input-group">
-          <label for="client-phone">Номер телефона *</label>
+        <div style="margin-top: 12px;">
+          <label for="client-phone">Телефон</label>
           <input type="tel" id="client-phone" placeholder="+7 (999) 000-00-00">
           <span id="phone-error" class="error-msg hidden">Введите корректный номер</span>
         </div>
@@ -57,10 +225,90 @@
       </div>
     </div>
 
-    <!-- Главная кнопка действия -->
     <button id="open-modal-btn" class="btn btn-primary full-width">Продолжить</button>
   </div>
 
-  <script src="app.js"></script>
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const serviceSelect = document.getElementById('service-select');
+    const bookingDate = document.getElementById('booking-date');
+    const bookingTime = document.getElementById('booking-time');
+    const openModalBtn = document.getElementById('open-modal-btn');
+
+    const bookingModal = document.getElementById('booking-modal');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const confirmBtn = document.getElementById('confirm-btn');
+
+    const clientPhone = document.getElementById('client-phone');
+    const phoneError = document.getElementById('phone-error');
+
+    // Открытие модального окна
+    openModalBtn.addEventListener('click', () => {
+      if (!serviceSelect.value || !bookingDate.value || !bookingTime.value) {
+        alert('Пожалуйста, выберите услугу, дату и время.');
+        return;
+      }
+      hideError();
+      bookingModal.classList.remove('hidden');
+    });
+
+    // Отмена — БЕЗ ПРОВЕРКИ ТЕЛЕФОНА
+    cancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeModal();
+    });
+
+    bookingModal.addEventListener('click', (e) => {
+      if (e.target === bookingModal) closeModal();
+    });
+
+    function closeModal() {
+      bookingModal.classList.add('hidden');
+      hideError();
+    }
+
+    function hideError() {
+      phoneError.classList.add('hidden');
+      clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+    }
+
+    function showError() {
+      phoneError.classList.remove('hidden');
+      clientPhone.style.borderColor = 'var(--danger-color)';
+    }
+
+    function isValidPhone(phone) {
+      return phone.replace(/\D/g, '').length >= 10;
+    }
+
+    // Подтверждение — Проверка выполняется ТОЛЬКО здесь
+    confirmBtn.addEventListener('click', () => {
+      const phoneValue = clientPhone.value.trim();
+
+      if (!isValidPhone(phoneValue)) {
+        showError();
+        return;
+      }
+
+      const bookingData = {
+        service: serviceSelect.value,
+        date: bookingDate.value,
+        time: bookingTime.value,
+        phone: phoneValue
+      };
+
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(bookingData));
+      } else {
+        alert('Запись оформлена:\n' + JSON.stringify(bookingData, null, 2));
+        closeModal();
+      }
+    });
+  </script>
 </body>
 </html>
