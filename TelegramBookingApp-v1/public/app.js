@@ -1,17 +1,94 @@
+// Инициализация Telegram WebApp
 const tg = window.Telegram?.WebApp;
-tg?.ready(); tg?.expand();
-const headers = {"content-type":"application/json", "X-Telegram-Init-Data": tg?.initData || ""};
-const dateInput = document.querySelector("#date"), agenda = document.querySelector("#agenda"), summary = document.querySelector("#summary"), editor = document.querySelector("#editor"), settingsDialog = document.querySelector("#settingsDialog");
-let current = null, bookings = [], settings = { reminders_enabled: 1, reminder_template: "Здравствуйте, {name}! Напоминаем о вашей записи {date} в {time}." };
-dateInput.value = new Date().toISOString().slice(0,10);
-async function request(path, options={}) { const r = await fetch(path, {...options, headers:{...headers,...options.headers}}); if (!r.ok) throw new Error((await r.json().catch(()=>({error:"Ошибка"}))).error); return r.json(); }
-async function load(){try{bookings=await request(`/api/bookings?date=${dateInput.value}`); render()}catch(e){agenda.innerHTML=`<p class="hint">${e.message}</p>`}}
-function render(){const total=bookings.reduce((n,b)=>n+Number(b.price),0);summary.innerHTML=`<p>${new Date(dateInput.value+"T12:00").toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}</p><strong>${bookings.length} записей · ${total.toFixed(2)} €</strong>`; const hours=[...Array(12)].map((_,i)=>String(i+9).padStart(2,"0")+":00"); agenda.innerHTML=hours.map(time=>{const b=bookings.find(x=>x.time===time);return `<button class="slot" data-id="${b?.id||""}" data-time="${time}"><span class="time">${time}</span><span class="name ${b?"":"empty"}">${b?escapeHtml(b.name):"Свободно"}</span>${b?.price?`<span>${Number(b.price).toFixed(2)} €</span>`:""}</button>`}).join("");document.querySelectorAll(".slot").forEach(x=>x.onclick=()=>openEditor(bookings.find(b=>b.id===x.dataset.id)||{date:dateInput.value,time:x.dataset.time,name:"",phone:"",price:0}));}
-function openEditor(b){current=b;document.querySelector("#formTitle").textContent=b.id?"Изменить запись":"Новая запись";for(const [id,key] of [["fDate","date"],["fTime","time"],["fName","name"],["fPhone","phone"],["fPrice","price"]])document.querySelector("#"+id).value=b[key]??"";document.querySelector("#delete").hidden=!b.id;editor.showModal()}
-document.querySelector("#add").onclick=()=>openEditor({date:dateInput.value,time:"09:00",name:"",phone:"",price:0});
-document.querySelector("#save").onclick=async()=>{const b={date:fDate.value,time:fTime.value,name:fName.value,phone:fPhone.value,price:fPrice.value};try{await request(current.id?`/api/bookings/${current.id}`:"/api/bookings",{method:current.id?"PUT":"POST",body:JSON.stringify(b)});editor.close();dateInput.value=b.date;await load()}catch(e){alert(e.message)}};
-document.querySelector("#delete").onclick=async()=>{if(confirm("Удалить запись?")){await request(`/api/bookings/${current.id}`,{method:"DELETE"});editor.close();load()}};
-document.querySelector("#settings").onclick=async()=>{try{settings=await request("/api/settings");reminders.checked=!!settings.reminders_enabled;template.value=settings.reminder_template;settingsDialog.showModal()}catch(e){alert(e.message)}};
-document.querySelector("#saveSettings").onclick=async()=>{await request("/api/settings",{method:"PUT",body:JSON.stringify({reminders_enabled:reminders.checked,reminder_template:template.value})});settingsDialog.close()};
-dateInput.onchange=load;document.querySelector("#prev").onclick=()=>{dateInput.value=shift(-1);load()};document.querySelector("#next").onclick=()=>{dateInput.value=shift(1);load()};
-function shift(n){const d=new Date(dateInput.value+"T12:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}function escapeHtml(x){return x.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}load();
+if (tg) {
+  tg.ready();
+  tg.expand(); // Разворачиваем окно на всю высоту
+}
+
+// Элементы UI
+const serviceSelect = document.getElementById('service-select');
+const bookingDate = document.getElementById('booking-date');
+const bookingTime = document.getElementById('booking-time');
+const openModalBtn = document.getElementById('open-modal-btn');
+
+const bookingModal = document.getElementById('booking-modal');
+const cancelBtn = document.getElementById('cancel-btn');
+const confirmBtn = document.getElementById('confirm-btn');
+
+const clientPhone = document.getElementById('client-phone');
+const phoneError = document.getElementById('phone-error');
+
+// Открытие модального окна (проверяем параметры записи)
+openModalBtn.addEventListener('click', () => {
+  if (!serviceSelect.value || !bookingDate.value || !bookingTime.value) {
+    alert('Пожалуйста, выберите услугу, дату и время.');
+    return;
+  }
+  
+  // Сбрасываем ошибки и открываем окно
+  hideError();
+  bookingModal.classList.remove('hidden');
+});
+
+// Кнопка ОТМЕНА — закрывает окно БЕЗ проверок
+cancelBtn.addEventListener('click', (e) => {
+  e.preventDefault(); // Предотвращаем любые стандартные действия
+  closeModal();
+});
+
+// Закрытие модального окна при клике на фон вне карточки
+bookingModal.addEventListener('click', (e) => {
+  if (e.target === bookingModal) {
+    closeModal();
+  }
+});
+
+// Функция закрытия окна и сброса формы
+function closeModal() {
+  bookingModal.classList.add('hidden');
+  hideError();
+}
+
+function hideError() {
+  phoneError.classList.add('hidden');
+  clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+}
+
+function showError() {
+  phoneError.classList.remove('hidden');
+  clientPhone.style.borderColor = 'var(--danger-color)';
+}
+
+// Валидация телефона (только цифры и плюс, не менее 10 символов)
+function isValidPhone(phone) {
+  const cleanPhone = phone.replace(/\D/g, '');
+  return cleanPhone.length >= 10;
+}
+
+// Кнопка ПОДТВЕРДИТЬ — здесь выполняется проверка
+confirmBtn.addEventListener('click', () => {
+  const phoneValue = clientPhone.value.trim();
+
+  // Проверка телефона ТОЛЬКО при отправке
+  if (!isValidPhone(phoneValue)) {
+    showError();
+    return;
+  }
+
+  hideError();
+
+  const bookingData = {
+    service: serviceSelect.value,
+    date: bookingDate.value,
+    time: bookingTime.value,
+    phone: phoneValue
+  };
+
+  // Отправляем данные в Telegram-бот и закрываем Mini App
+  if (tg && tg.sendData) {
+    tg.sendData(JSON.stringify(bookingData));
+  } else {
+    alert('Запись успешно создана!\n' + JSON.stringify(bookingData, null, 2));
+    closeModal();
+  }
+});
