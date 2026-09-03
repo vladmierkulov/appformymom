@@ -4,34 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Запись на прием</title>
-  
-  <!-- Подключение Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <style>
-    /* Переменные с резервными значениями (работают и в Telegram, и в обычном браузере) */
     :root {
-      --bg-color: var(--tg-theme-bg-color, #efeff4);
+      --bg: var(--tg-theme-bg-color, #f4f4f5);
       --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text-color: var(--tg-theme-text-color, #000000);
-      --hint-color: var(--tg-theme-hint-color, #8e8e93);
-      --button-color: var(--tg-theme-button-color, #007aff);
-      --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-      --danger-color: #ff3b30;
-      --border-radius: 12px;
+      --text: var(--tg-theme-text-color, #1c1c1e);
+      --hint: var(--tg-theme-hint-color, #8e8e93);
+      --primary: var(--tg-theme-button-color, #007aff);
+      --primary-text: var(--tg-theme-button-text-color, #ffffff);
+      --danger: #ff3b30;
+      --radius: 14px;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      background-color: var(--bg);
+      color: var(--text);
       padding: 16px;
       display: flex;
       justify-content: center;
@@ -40,275 +36,413 @@
 
     .container {
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
       gap: 16px;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 4px;
-    }
-
-    .header h2 {
-      font-size: 20px;
-      font-weight: 700;
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: var(--hint-color);
-      margin-top: 4px;
     }
 
     /* Карточки */
     .card {
       background: var(--card-bg);
       padding: 16px;
-      border-radius: var(--border-radius);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--hint);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    /* Селектор услуги */
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    /* Календарь */
+    .calendar-header {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .calendar-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--hint);
+      margin-bottom: 8px;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .day.disabled {
+      color: var(--hint);
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .day.today {
+      border: 1px solid var(--primary);
+    }
+
+    .day.selected {
+      background-color: var(--primary);
+      color: var(--primary-text);
+      font-weight: 700;
+    }
+
+    /* Сетка времени */
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    /* Поля ввода и селекты */
-    label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--hint-color);
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.1);
+    .time-slot {
+      padding: 10px;
+      text-align: center;
+      background: var(--bg);
       border-radius: 8px;
-      background: var(--bg-color);
-      color: var(--text-color);
-      font-size: 15px;
-      outline: none;
-      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
     }
 
-    input:focus, select:focus {
-      border-color: var(--button-color);
+    .time-slot.selected {
+      background: var(--primary);
+      color: var(--primary-text);
     }
 
     /* Кнопки */
     .btn {
+      width: 100%;
       padding: 14px;
       border: none;
-      border-radius: var(--border-radius);
+      border-radius: var(--radius);
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      background-color: var(--primary);
+      color: var(--primary-text);
+      transition: opacity 0.2s;
     }
 
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-primary {
-      background-color: var(--button-color);
-      color: var(--button-text-color);
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn-secondary {
-      background-color: transparent;
-      color: var(--hint-color);
-    }
-
-    .full-width {
-      width: 100%;
-      margin-top: 8px;
+      background: transparent;
+      color: var(--hint);
     }
 
     /* Модальное окно */
     .modal {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
       backdrop-filter: blur(4px);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
+      align-items: flex-end;
       z-index: 100;
+      transition: opacity 0.2s;
     }
 
     .modal-content {
       width: 100%;
-      max-width: 340px;
+      background: var(--card-bg);
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 12px;
     }
 
     .modal-actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 8px;
     }
 
-    /* Утилиты */
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
-    .error-msg {
-      color: var(--danger-color);
-      font-size: 12px;
-      margin-top: 4px;
-      display: block;
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <header class="header">
-      <h2>Онлайн-запись</h2>
-      <p class="subtitle">Выберите услугу и время</p>
-    </header>
-
-    <!-- Выбор услуги -->
-    <div class="card">
-      <label for="service-select">Услуга</label>
-      <select id="service-select">
-        <option value="" disabled selected>Выберите услугу...</option>
-        <option value="Стрижка">Стрижка</option>
-        <option value="Окрашивание">Окрашивание</option>
-        <option value="Маникюр">Маникюр</option>
-      </select>
-    </div>
-
-    <!-- Выбор даты и времени -->
-    <div class="card grid-2">
-      <div>
-        <label for="booking-date">Дата</label>
-        <input type="date" id="booking-date">
-      </div>
-      <div>
-        <label for="booking-time">Время</label>
-        <input type="time" id="booking-time">
-      </div>
-    </div>
-
-    <!-- Модальное окно записи -->
-    <div id="booking-modal" class="modal hidden">
-      <div class="modal-content card">
-        <h3>Подтверждение</h3>
-        <p class="subtitle">Введите ваш номер телефона</p>
-        
-        <div style="margin-top: 12px;">
-          <label for="client-phone">Телефон</label>
-          <input type="tel" id="client-phone" placeholder="+7 (999) 000-00-00">
-          <span id="phone-error" class="error-msg hidden">Введите корректный номер</span>
-        </div>
-
-        <div class="modal-actions">
-          <button id="cancel-btn" class="btn btn-secondary">Отмена</button>
-          <button id="confirm-btn" class="btn btn-primary">Записаться</button>
-        </div>
-      </div>
-    </div>
-
-    <button id="open-modal-btn" class="btn btn-primary full-width">Продолжить</button>
+<div class="container">
+  <!-- Услуга -->
+  <div class="card">
+    <div class="card-title">1. Услуга</div>
+    <select id="service">
+      <option value="Стрижка">Стрижка (1 час)</option>
+      <option value="Окрашивание">Окрашивание (2 часа)</option>
+      <option value="Маникюр">Маникюр (1.5 часа)</option>
+    </select>
   </div>
 
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
+  <!-- Календарь -->
+  <div class="card">
+    <div class="card-title">2. Выберите дату</div>
+    <div class="calendar-header">
+      <button class="nav-btn" id="prev-month">&lt;</button>
+      <h3 id="month-title"></h3>
+      <button class="nav-btn" id="next-month">&gt;</button>
+    </div>
+    <div class="weekdays">
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+    <div class="days-grid" id="days-container"></div>
+  </div>
+
+  <!-- Время -->
+  <div class="card hidden" id="time-card">
+    <div class="card-title">3. Выберите время</div>
+    <div class="time-grid" id="time-container">
+      <div class="time-slot" data-time="10:00">10:00</div>
+      <div class="time-slot" data-time="11:30">11:30</div>
+      <div class="time-slot" data-time="13:00">13:00</div>
+      <div class="time-slot" data-time="14:30">14:30</div>
+      <div class="time-slot" data-time="16:00">16:00</div>
+      <div class="time-slot" data-time="17:30">17:30</div>
+    </div>
+  </div>
+
+  <!-- Кнопка продолжить -->
+  <button class="btn" id="continue-btn" disabled>Записаться</button>
+</div>
+
+<!-- Модалка ввода данных -->
+<div class="modal hidden" id="booking-modal">
+  <div class="modal-content">
+    <h3>Детали записи</h3>
+    <p id="summary-text" style="font-size: 14px; color: var(--hint);"></p>
+    
+    <div>
+      <input type="text" id="client-name" class="input-field" placeholder="Ваше имя">
+    </div>
+
+    <div>
+      <input type="tel" id="client-phone" class="input-field" placeholder="Номер телефона *">
+      <span class="error-msg hidden" id="phone-error">Введите корректный номер (от 10 цифр)</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancel-btn">Отмена</button>
+      <button class="btn" id="confirm-btn">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // Состояние
+  let currentDate = new Date();
+  let selectedDateStr = null;
+  let selectedTime = null;
+
+  // Элементы
+  const monthTitle = document.getElementById('month-title');
+  const daysContainer = document.getElementById('days-container');
+  const prevBtn = document.getElementById('prev-month');
+  const nextBtn = document.getElementById('next-month');
+  const timeCard = document.getElementById('time-card');
+  const timeSlots = document.querySelectorAll('.time-slot');
+  const continueBtn = document.getElementById('continue-btn');
+  const modal = document.getElementById('booking-modal');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const confirmBtn = document.getElementById('confirm-btn');
+  const phoneInput = document.getElementById('client-phone');
+  const phoneError = document.getElementById('phone-error');
+  const summaryText = document.getElementById('summary-text');
+
+  const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
+  // Рендер календаря
+  function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    monthTitle.innerText = `${monthNames[month]} ${year}`;
+    daysContainer.innerHTML = '';
+
+    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // Пустые ячейки в начале
+    for (let i = 0; i < firstDayIndex; i++) {
+      daysContainer.appendChild(document.createElement('div'));
     }
 
-    const serviceSelect = document.getElementById('service-select');
-    const bookingDate = document.getElementById('booking-date');
-    const bookingTime = document.getElementById('booking-time');
-    const openModalBtn = document.getElementById('open-modal-btn');
+    // Дни месяца
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayEl = document.createElement('div');
+      dayEl.classList.add('day');
+      dayEl.innerText = d;
 
-    const bookingModal = document.getElementById('booking-modal');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const confirmBtn = document.getElementById('confirm-btn');
+      const thisDate = new Date(year, month, d);
+      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-    const clientPhone = document.getElementById('client-phone');
-    const phoneError = document.getElementById('phone-error');
-
-    // Открытие модального окна
-    openModalBtn.addEventListener('click', () => {
-      if (!serviceSelect.value || !bookingDate.value || !bookingTime.value) {
-        alert('Пожалуйста, выберите услугу, дату и время.');
-        return;
-      }
-      hideError();
-      bookingModal.classList.remove('hidden');
-    });
-
-    // Отмена — БЕЗ ПРОВЕРКИ ТЕЛЕФОНА
-    cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      closeModal();
-    });
-
-    bookingModal.addEventListener('click', (e) => {
-      if (e.target === bookingModal) closeModal();
-    });
-
-    function closeModal() {
-      bookingModal.classList.add('hidden');
-      hideError();
-    }
-
-    function hideError() {
-      phoneError.classList.add('hidden');
-      clientPhone.style.borderColor = 'rgba(0, 0, 0, 0.1)';
-    }
-
-    function showError() {
-      phoneError.classList.remove('hidden');
-      clientPhone.style.borderColor = 'var(--danger-color)';
-    }
-
-    function isValidPhone(phone) {
-      return phone.replace(/\D/g, '').length >= 10;
-    }
-
-    // Подтверждение — Проверка выполняется ТОЛЬКО здесь
-    confirmBtn.addEventListener('click', () => {
-      const phoneValue = clientPhone.value.trim();
-
-      if (!isValidPhone(phoneValue)) {
-        showError();
-        return;
-      }
-
-      const bookingData = {
-        service: serviceSelect.value,
-        date: bookingDate.value,
-        time: bookingTime.value,
-        phone: phoneValue
-      };
-
-      if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify(bookingData));
+      if (thisDate < today) {
+        dayEl.classList.add('disabled');
       } else {
-        alert('Запись оформлена:\n' + JSON.stringify(bookingData, null, 2));
-        closeModal();
+        if (thisDate.getTime() === today.getTime()) dayEl.classList.add('today');
+        if (selectedDateStr === dateStr) dayEl.classList.add('selected');
+
+        dayEl.addEventListener('click', () => {
+          selectedDateStr = dateStr;
+          renderCalendar();
+          timeCard.classList.remove('hidden');
+          checkReady();
+        });
       }
+      daysContainer.appendChild(dayEl);
+    }
+  }
+
+  // Переключение месяцев
+  prevBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+  nextBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+
+  // Выбор времени
+  timeSlots.forEach(slot => {
+    slot.addEventListener('click', () => {
+      timeSlots.forEach(s => s.classList.remove('selected'));
+      slot.classList.add('selected');
+      selectedTime = slot.dataset.time;
+      checkReady();
     });
-  </script>
+  });
+
+  function checkReady() {
+    continueBtn.disabled = !(selectedDateStr && selectedTime);
+  }
+
+  // Открытие модалки
+  continueBtn.addEventListener('click', () => {
+    summaryText.innerText = `${document.getElementById('service').value} — ${selectedDateStr} в ${selectedTime}`;
+    hidePhoneError();
+    modal.classList.remove('hidden');
+  });
+
+  // КНОПКА ОТМЕНА — Закрывает БЕЗ проверок
+  cancelBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeModal();
+  });
+
+  function closeModal() {
+    modal.classList.add('hidden');
+    hidePhoneError();
+  }
+
+  function hidePhoneError() {
+    phoneError.classList.add('hidden');
+    phoneInput.style.borderColor = 'rgba(0,0,0,0.1)';
+  }
+
+  // ПОДТВЕРЖДЕНИЕ — Валидация ТОЛЬКО при клике на "Подтвердить"
+  confirmBtn.addEventListener('click', () => {
+    const rawPhone = phoneInput.value.replace(/\D/g, '');
+    if (rawPhone.length < 10) {
+      phoneError.classList.remove('hidden');
+      phoneInput.style.borderColor = 'var(--danger)';
+      return;
+    }
+
+    const payload = {
+      service: document.getElementById('service').value,
+      date: selectedDateStr,
+      time: selectedTime,
+      name: document.getElementById('client-name').value,
+      phone: phoneInput.value
+    };
+
+    if (tg && tg.sendData) {
+      tg.sendData(JSON.stringify(payload));
+    } else {
+      alert('Данные записи:\n' + JSON.stringify(payload, null, 2));
+      closeModal();
+    }
+  });
+
+  // Инициализация
+  renderCalendar();
+</script>
+
 </body>
 </html>
