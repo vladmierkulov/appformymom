@@ -246,11 +246,7 @@
   <div class="glass-card" id="time-section" style="display: none;">
     <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--ios-text-secondary);">Доступные слоты</h2>
     <div class="time-grid" id="time-container">
-      <div class="time-slot" onclick="selectTime(this, '09:00')">09:00</div>
-      <div class="time-slot" onclick="selectTime(this, '11:30')">11:30</div>
-      <div class="time-slot" onclick="selectTime(this, '14:00')">14:00</div>
-      <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
-      <div class="time-slot" onclick="selectTime(this, '19:00')">19:00</div>
+      <!-- Time slots will be dynamically generated here by JavaScript -->
     </div>
   </div>
 
@@ -306,6 +302,41 @@
       }
     }
 
+    function generateTimeSlots() {
+      const timeContainer = document.getElementById('time-container');
+      timeContainer.innerHTML = ''; // Clear existing slots
+
+      const startHour = 9;
+      const endHour = 19; // Generate slots up to and including 19:00
+      const intervalMinutes = 30;
+
+      let currentHour = startHour;
+      let currentMinute = 0;
+
+      while (true) {
+        const hourString = String(currentHour).padStart(2, '0');
+        const minuteString = String(currentMinute).padStart(2, '0');
+        const time = `${hourString}:${minuteString}`;
+
+        const slot = document.createElement('div');
+        slot.className = 'time-slot';
+        slot.innerText = time;
+        slot.onclick = () => selectTime(slot, time);
+        timeContainer.appendChild(slot);
+
+        currentMinute += intervalMinutes;
+        if (currentMinute >= 60) {
+          currentMinute -= 60;
+          currentHour++;
+        }
+
+        // Break condition: if we've passed the end time
+        if (currentHour > endHour || (currentHour === endHour && currentMinute > 0)) {
+          break;
+        }
+      }
+    }
+
     function selectDate(element, day, month, year) {
       tg.HapticFeedback.impactOccurred('light'); // Native haptic feedback
       document.querySelectorAll('.day-number').forEach(e => e.classList.remove('selected'));
@@ -315,6 +346,10 @@
       const timeSection = document.getElementById('time-section');
       timeSection.style.display = 'block';
       timeSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Clear any previously selected time and its visual state when a new date is selected
+      selectedTime = null;
+      document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
       
       checkForm();
     }
@@ -359,6 +394,7 @@
     };
 
     renderCalendar();
+    generateTimeSlots(); // Generate time slots on initial page load
   </script>
 </body>
 </html>
