@@ -7,17 +7,41 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: var(--tg-theme-secondary-bg-color, #f2f2f7);
-      --card-bg: var(--tg-theme-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #000000);
-      --hint: var(--tg-theme-hint-color, #8e8e93);
-      --primary: var(--tg-theme-button-color, #007aff);
-      --primary-text: var(--tg-theme-button-text-color, #ffffff);
-      --border: rgba(60, 60, 67, 0.12);
+      /* Telegram theme variables - these will be overridden by JS if tg exists */
+      --tg-theme-bg-color: #ffffff;
+      --tg-theme-secondary-bg-color: #f2f2f7;
+      --tg-theme-text-color: #000000;
+      --tg-theme-hint-color: #8e8e93;
+      --tg-theme-button-color: #007aff;
+      --tg-theme-button-text-color: #ffffff;
+
+      /* Derived semantic variables */
+      --bg: var(--tg-theme-secondary-bg-color);
+      --card-bg: var(--tg-theme-bg-color);
+      --text: var(--tg-theme-text-color);
+      --hint: var(--tg-theme-hint-color);
+      --primary: var(--tg-theme-button-color);
+      --primary-text: var(--tg-theme-button-text-color);
       --success: #34c759;
       --danger: #ff3b30;
-      --radius-lg: 18px; /* Slightly larger radius for overall iOS feel */
-      --radius-md: 12px; /* Slightly larger radius for smaller elements */
+
+      /* iOS style radii */
+      --radius-lg: 18px;
+      --radius-md: 12px;
+
+      /* Dynamic Transparent colors (will be set by JS on theme load) */
+      --bg-transparent: rgba(242, 242, 247, 0.85); /* Default light theme fallback */
+      --card-bg-transparent: rgba(255, 255, 255, 0.85); /* Default light theme fallback */
+      --border-transparent: rgba(60, 60, 67, 0.1); /* Default light theme fallback, from hint color */
+    }
+
+    @media (prefers-color-scheme: dark) {
+      /* Default dark theme fallback for transparent colors if JS fails or not in Telegram */
+      :root {
+        --bg-transparent: rgba(28, 28, 30, 0.85);
+        --card-bg-transparent: rgba(0, 0, 0, 0.85);
+        --border-transparent: rgba(255, 255, 255, 0.1);
+      }
     }
 
     * {
@@ -28,22 +52,32 @@
     }
 
     body {
-      background-color: var(--bg);
+      background-color: var(--bg); /* Fallback for older browsers or no JS */
       color: var(--text);
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
-      padding-bottom: env(safe-area-inset-bottom, 0px); /* Account for home indicator */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      
+      /* Liquid glass background: subtle gradient blending theme colors */
+      background-image: linear-gradient(to bottom right, var(--bg), color-mix(in srgb, var(--bg), var(--card-bg) 20%));
+      background-attachment: fixed;
+      background-size: cover; /* Ensure gradient covers the whole background */
     }
 
-    /* Хедер */
+    /* Header */
     .app-header {
-      background: var(--card-bg);
+      background: var(--card-bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(20px) saturate(180%); /* Liquid glass effect */
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       padding: 16px 16px;
       text-align: center;
-      border-bottom: 0.5px solid var(--border);
-      box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow for depth, iOS-like */
+      border-bottom: 0.5px solid var(--border-transparent); /* Softer border */
+      box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.04); /* Subtle, layered shadow */
+      position: sticky; /* Make it sticky for blur to work with scrolling content */
+      top: 0;
+      z-index: 10;
     }
 
     .app-header-title {
@@ -58,20 +92,23 @@
       margin-top: 2px;
     }
 
-    /* Контент */
+    /* Content */
     .app-content {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 16px 80px 16px; /* Increased top padding, 80px for tab bar */
+      padding: 16px 16px 80px 16px; /* Increased bottom padding for tab bar */
     }
 
-    /* Карточки */
+    /* Cards */
     .card {
-      background: var(--card-bg);
+      background: var(--card-bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(15px) saturate(180%); /* Liquid glass effect */
+      -webkit-backdrop-filter: blur(15px) saturate(180%);
       border-radius: var(--radius-lg);
       padding: 16px 16px;
       margin-bottom: 12px;
-      border: 0.5px solid var(--border);
+      border: 0.5px solid var(--border-transparent); /* Softer border */
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03); /* More pronounced, soft shadow */
     }
 
     .card-title {
@@ -86,146 +123,163 @@
       align-items: center;
     }
 
-    /* Лента дней */
+    /* Days Ribbon */
     .days-ribbon {
       display: flex;
-      gap: 8px; /* Slightly more gap between chips */
+      gap: 8px;
       overflow-x: auto;
       scrollbar-width: none;
       padding-bottom: 2px;
+      padding-top: 2px; /* Add a little padding for visual balance */
     }
     .days-ribbon::-webkit-scrollbar { display: none; }
 
     .day-chip {
-      flex: 0 0 58px; /* Slightly wider chips */
+      flex: 0 0 58px;
       padding: 9px 0;
-      background: var(--bg);
+      background: var(--bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(10px); /* Lighter blur for chips */
+      -webkit-backdrop-filter: blur(10px);
       border-radius: var(--radius-md);
       text-align: center;
       cursor: pointer;
-      border: 1px solid transparent;
+      border: 0.5px solid var(--border-transparent); /* Softer border */
       transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03); /* Subtle shadow for chips */
     }
 
     .day-chip.selected {
-      background: var(--primary);
+      background: var(--primary); /* Keep solid for selected for clear contrast */
       color: var(--primary-text);
+      border-color: var(--primary); /* Solid border for selected */
+      box-shadow: 0 1px 4px rgba(0, 122, 255, 0.2); /* Shadow for selected state */
     }
 
     .day-chip .wk { font-size: 11px; text-transform: uppercase; font-weight: 600; opacity: 0.7; }
     .day-chip .num { font-size: 17px; font-weight: 700; margin-top: 2px; }
 
-    /* Элементы списков */
+    /* List Items */
     .list-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 14px; /* Increased padding for better touch targets */
-      background: var(--bg);
+      padding: 12px 14px;
+      background: var(--bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(10px); /* Lighter blur for list items */
+      -webkit-backdrop-filter: blur(10px);
       border-radius: var(--radius-md);
-      margin-bottom: 8px; /* Slightly more space between list items */
-      transition: background 0.15s ease; /* Smooth transition on tap */
-      cursor: pointer; /* Indicate clickable */
+      margin-bottom: 8px;
+      border: 0.5px solid var(--border-transparent); /* Softer border */
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: background 0.15s ease;
+      cursor: pointer;
     }
 
     .list-item:active {
-      background: rgba(var(--primary), 0.1); /* Subtle background on press */
+      background: color-mix(in srgb, var(--primary) 10%, var(--bg-transparent)); /* Blend with primary on press */
     }
-    /* For list items that are not clickable (e.g. static analytics info), remove cursor/active */
     .list-item.static {
         cursor: default;
-        background: var(--bg);
+        background: var(--bg-transparent);
     }
     .list-item.static:active {
-        background: var(--bg);
+        background: var(--bg-transparent);
     }
 
     .list-item:last-child { margin-bottom: 0; }
 
     .delete-btn {
-      background: rgba(255, 59, 48, 0.1);
+      background: rgba(255, 59, 48, 0.1); /* Specific fixed color, can remain */
       border: none;
       color: var(--danger);
       font-size: 13px;
       font-weight: 600;
-      width: 28px; /* Slightly larger delete button */
-      height: 28px; /* Slightly larger delete button */
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      margin-left: 10px; /* Slightly more margin */
+      margin-left: 10px;
     }
 
-    /* Кнопки и инпуты */
+    /* Buttons and Inputs */
     .input-field, select {
       width: 100%;
-      padding: 12px 14px; /* Increased padding for better touch targets */
-      border: 1px solid var(--border);
+      padding: 12px 14px;
+      border: 0.5px solid var(--border-transparent); /* Softer border */
       border-radius: var(--radius-md);
-      background: var(--bg);
+      background: var(--bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(5px); /* Very light blur for inputs */
+      -webkit-backdrop-filter: blur(5px);
       color: var(--text);
       font-size: 15px;
-      margin-bottom: 12px; /* Slightly more margin below inputs */
+      margin-bottom: 12px;
       outline: none;
-      -webkit-appearance: none; /* For selects */
-      -moz-appearance: none; /* For selects */
-      appearance: none; /* For selects */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
 
     .input-field:focus, select:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); /* Subtle glow on focus */
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); /* Softer focus glow */
+      background: var(--card-bg-transparent); /* Slightly lighter on focus */
     }
 
     /* Custom arrow for selects */
     select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Hint color chevron */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 10px center;
-      background-size: 18px; /* Slightly larger arrow */
-      padding-right: 36px; /* Make space for the arrow */
+      background-size: 18px;
+      padding-right: 36px;
     }
 
     .btn {
       width: 100%;
       padding: 13px;
       border: none;
-      border-radius: var(--radius-lg); /* Larger radius for buttons, like cards */
+      border-radius: var(--radius-lg);
       background: var(--primary);
       color: var(--primary-text);
       font-weight: 600;
       font-size: 15px;
       cursor: pointer;
       transition: opacity 0.15s ease;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent); /* Subtle button shadow */
     }
 
     .btn:active { opacity: 0.8; }
 
     .btn-secondary {
-      background: rgba(0, 122, 255, 0.1);
+      background: rgba(0, 122, 255, 0.1); /* Specific fixed color, can remain */
       color: var(--primary);
       border-radius: var(--radius-lg);
+      box-shadow: none; /* Secondary buttons usually don't have strong shadows */
     }
 
     .btn-sm {
-      padding: 6px 14px; /* Slightly more padding for small buttons */
+      padding: 6px 14px;
       font-size: 12px;
-      border-radius: 18px; /* Keep appropriate radius for small buttons */
+      border-radius: 18px;
       width: auto;
     }
 
-    /* Нижняя навигация */
+    /* Bottom Navigation */
     .tab-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      height: 58px; /* Slightly taller tab bar for better touch targets */
-      background: var(--card-bg);
+      height: 58px;
+      background: var(--card-bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(25px) saturate(180%); /* Stronger blur for tab bar */
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
       display: flex;
-      border-top: 0.5px solid var(--border);
+      border-top: 0.5px solid var(--border-transparent); /* Softer border */
       z-index: 100;
-      padding-bottom: env(safe-area-inset-bottom, 0px); /* Account for iPhone X notch bottom bar */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05), 0 -4px 12px rgba(0, 0, 0, 0.03); /* Soft shadow upwards */
     }
 
     .tab-item {
@@ -246,9 +300,9 @@
       font-weight: 600;
     }
 
-    .tab-item .icon { font-size: 20px; /* Slightly larger icons */ }
+    .tab-item .icon { font-size: 22px; /* Slightly larger icons for better visibility and touch targets */ }
 
-    /* Модальное окно */
+    /* Modal */
     .modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -268,27 +322,31 @@
 
     .modal-content {
       width: 100%;
-      background: var(--card-bg);
-      border-top-left-radius: 20px; /* Slightly larger radius for modals */
+      background: var(--card-bg-transparent); /* Semi-transparent background */
+      backdrop-filter: blur(30px) saturate(180%); /* Stronger blur for modals */
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border-top-left-radius: 20px;
       border-top-right-radius: 20px;
-      padding: 16px 16px 34px 16px; /* Increased bottom padding for home indicator */
+      padding: 16px 16px 34px 16px;
       max-height: 85vh;
       overflow-y: auto;
+      border-top: 0.5px solid var(--border-transparent); /* Subtle top border */
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1), 0 -8px 20px rgba(0, 0, 0, 0.08); /* Stronger shadows for modals */
     }
 
     .sheet-handle {
       width: 36px;
       height: 4px;
-      background: var(--border);
+      background: var(--border-transparent); /* Use transparent border color */
       border-radius: 2px;
-      margin: 0 auto 16px auto; /* Slightly more space below handle */
+      margin: 0 auto 16px auto;
     }
 
     .modal-form-label {
       font-size: 15px;
       font-weight: 500; 
       color: var(--text);
-      margin-bottom: 6px; /* Slightly less gap between label and input */
+      margin-bottom: 6px;
       display: block;
     }
 
@@ -444,7 +502,56 @@
 
 <script>
   const tg = window.Telegram?.WebApp;
-  if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor(tg.themeParams.bg_color || '#ffffff'); tg.setBackgroundColor(tg.themeParams.secondary_bg_color || '#f2f2f7');}
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    // Set header and background color based on Telegram theme
+    tg.setHeaderColor(tg.themeParams.bg_color || '#ffffff');
+    tg.setBackgroundColor(tg.themeParams.secondary_bg_color || '#f2f2f7');
+
+    // Function to convert hex to RGB string (e.g., "255, 255, 255")
+    function hexToRgb(hex) {
+      if (!hex || typeof hex !== 'string') return '0, 0, 0';
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+        return r + r + g + g + b + b;
+      });
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
+    }
+
+    // Set dynamic transparent CSS variables
+    const root = document.documentElement;
+    const bgColorRgb = hexToRgb(tg.themeParams.bg_color || '#ffffff');
+    const secondaryBgColorRgb = hexToRgb(tg.themeParams.secondary_bg_color || '#f2f2f7');
+    const hintColorRgb = hexToRgb(tg.themeParams.hint_color || '#8e8e93');
+
+    // Set RGB components for use in rgba()
+    root.style.setProperty('--card-bg-rgb', bgColorRgb);
+    root.style.setProperty('--bg-rgb', secondaryBgColorRgb);
+    root.style.setProperty('--hint-rgb', hintColorRgb);
+
+    // Set transparent versions of main background colors
+    root.style.setProperty('--card-bg-transparent', `rgba(${bgColorRgb}, 0.85)`);
+    root.style.setProperty('--bg-transparent', `rgba(${secondaryBgColorRgb}, 0.85)`);
+    // Set transparent border color based on hint color for good contrast
+    root.style.setProperty('--border-transparent', `rgba(${hintColorRgb}, 0.2)`);
+  } else {
+    // Fallback if not in Telegram Web App context, set default transparent colors
+    const root = document.documentElement;
+    root.style.setProperty('--card-bg-rgb', '255, 255, 255');
+    root.style.setProperty('--bg-rgb', '242, 242, 247');
+    root.style.setProperty('--hint-rgb', '142, 142, 147');
+
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        root.style.setProperty('--card-bg-rgb', '0, 0, 0');
+        root.style.setProperty('--bg-rgb', '28, 28, 30');
+        root.style.setProperty('--hint-rgb', '142, 142, 147');
+    }
+    root.style.setProperty('--card-bg-transparent', `rgba(${root.style.getPropertyValue('--card-bg-rgb')}, 0.85)`);
+    root.style.setProperty('--bg-transparent', `rgba(${root.style.getPropertyValue('--bg-rgb')}, 0.85)`);
+    root.style.setProperty('--border-transparent', `rgba(${root.style.getPropertyValue('--hint-rgb')}, 0.2)`);
+  }
 
   let appState = {
     selectedDate: getTodayStr(),
@@ -466,13 +573,17 @@
       tg.CloudStorage.setItem('ba_master_state', serialized, (err, success) => {
         const statusEl = document.getElementById('cloud-status');
         if (success) {
-          statusEl.innerText = '● Сохранено в облаке';
+          statusEl.innerText = '☁️ Сохранено в облаке'; // Use cloud emoji
           statusEl.style.color = 'var(--success)';
         } else {
-          statusEl.innerText = '● Сохранено локально';
+          statusEl.innerText = '⚫Т Сохранено локально'; // Use dot emoji
           statusEl.style.color = 'var(--hint)';
         }
       });
+    } else {
+      const statusEl = document.getElementById('cloud-status');
+      statusEl.innerText = '⚫Т Сохранено локально';
+      statusEl.style.color = 'var(--hint)';
     }
   }
 
@@ -488,15 +599,21 @@
               services: loadedState.services || [],
               bookings: (loadedState.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default
             };
+            document.getElementById('cloud-status').innerText = '☁️ Синхронизировано с Telegram';
+            document.getElementById('cloud-status').style.color = 'var(--success)';
             onComplete();
             return;
           } catch(e) { console.error("Failed to parse cloud state", e); }
         }
         loadFromLocalStorage();
+        document.getElementById('cloud-status').innerText = '⚫Т Загружено локально';
+        document.getElementById('cloud-status').style.color = 'var(--hint)';
         onComplete();
       });
     } else {
       loadFromLocalStorage();
+      document.getElementById('cloud-status').innerText = '⚫Т Загружено локально';
+      document.getElementById('cloud-status').style.color = 'var(--hint)';
       onComplete();
     }
   }
@@ -520,7 +637,8 @@
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
-
+  
+  // Existing switchTab, renderDaysRibbon, etc. functions...
   function switchTab(tabName, title) {
     document.querySelectorAll('.app-content > div').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
@@ -584,7 +702,7 @@
           <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price.toFixed(2) + ' €' : ''}</div>
         </div>
         <div style="display:flex; align-items:center;">
-          <select onchange="event.stopPropagation(); changeBookingStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px; background-color:var(--card-bg);">
+          <select onchange="event.stopPropagation(); changeBookingStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px; background-color:var(--card-bg-transparent); border:0.5px solid var(--border-transparent); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);">
             <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
             <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
             <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
@@ -772,17 +890,21 @@
   }
 
   function deleteClient(id) {
+    // First, get the client name before deleting the client from the array
+    const clientToDelete = appState.clients.find(c => c.id === id);
+    const clientNameToDelete = clientToDelete ? clientToDelete.name : null;
+
     appState.clients = appState.clients.filter(c => c.id !== id);
+    
     // Anonymize or remove association for bookings using this client's name
-    appState.bookings = appState.bookings.map(b => {
-        // This is a heuristic: if a client's name matches a booking clientName, clear it.
-        // A more robust solution would be to store client ID in bookings.
-        const deletedClient = appState.clients.find(c => c.id === id);
-        if (deletedClient && b.clientName === deletedClient.name) {
-            return { ...b, clientName: 'Гость', phone: '' };
-        }
-        return b;
-    });
+    if (clientNameToDelete) {
+        appState.bookings = appState.bookings.map(b => {
+            if (b.clientName === clientNameToDelete) {
+                return { ...b, clientName: 'Гость', phone: '' };
+            }
+            return b;
+        });
+    }
     saveState();
     renderClients();
     renderSchedule(); // Refresh schedule to reflect changes
@@ -857,15 +979,21 @@
   }
 
   function deleteService(id) {
+    // First, get the service title before deleting the service from the array
+    const serviceToDelete = appState.services.find(s => s.id === id);
+    const serviceTitleToDelete = serviceToDelete ? serviceToDelete.title : null;
+
     appState.services = appState.services.filter(s => s.id !== id);
-    // Also update bookings where this service was used
-    appState.bookings = appState.bookings.map(b => {
-        const deletedService = appState.services.find(s => s.id === id);
-        if (deletedService && b.serviceTitle === deletedService.title) {
-            return { ...b, serviceTitle: 'Без услуги', price: 0 };
-        }
-        return b;
-    });
+
+    // Update bookings where this service was used
+    if (serviceTitleToDelete) {
+        appState.bookings = appState.bookings.map(b => {
+            if (b.serviceTitle === serviceTitleToDelete) {
+                return { ...b, serviceTitle: 'Без услуги', price: 0 };
+            }
+            return b;
+        });
+    }
     saveState();
     renderServices();
     renderSchedule(); // Refresh schedule to reflect changes
