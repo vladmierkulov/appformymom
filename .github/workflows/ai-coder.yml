@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -26,59 +26,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai pydantic
+          pip install google-generativeai
 
       - name: Run Gemini Code Generator
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PROMPT: ${{ github.event.client_payload.prompt }}
         run: |
-          python -c "
-          import os, json
-          from google import genai
-
-          client = genai.Client(api_key=os.environ['GEMINI_API_KEY'])
-          prompt_text = os.environ.get('PROMPT', 'Update project')
-
-          # Собираем контекст проекта
-          context = {}
-          for root, dirs, files in os.walk('.'):
-              if '.git' in root or 'node_modules' in root:
-                  continue
-              for f in files:
-                  path = os.path.join(root, f)
-                  try:
-                      with open(path, 'r', encoding='utf-8') as content_file:
-                          context[path] = content_file.read()
-                  except Exception:
-                      pass
-
-          system_instruction = '''
-          You are an expert full-stack developer.
-          Analyze the user prompt and the existing files in the context.
-          Return ONLY a raw JSON object where keys are file paths and values are full updated file content.
-          Do NOT include markdown formatting like \`\`\`json or \`\`\`.
-          Example format: {\"index.html\": \"<html>...</html>\"}
-          '''
-
-          response = client.models.generate_content(
-              model='gemini-2.5-flash',
-              contents=f'Context: {json.dumps(context)}\n\nPrompt: {prompt_text}',
-              config={'system_instruction': system_instruction}
-          )
-
-          text = response.text.strip()
-          if text.startswith('```'):
-              text = text.split('\n', 1)[1].rsplit('\n', 1)[0]
-          if text.startswith('json'):
-              text = text[4:].strip()
-
-          files_to_update = json.loads(text)
-          for file_path, new_content in files_to_update.items():
-              os.makedirs(os.path.dirname(file_path), exist_ok=True) if os.path.dirname(file_path) else None
-              with open(file_path, 'w', encoding='utf-8') as f:
-                  f.write(new_content)
-          "
+          python generate.py
 
       - name: Commit and push changes
         run: |
@@ -88,3 +43,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            git commit -m "feat(ai): ${{ github.event.client_payload.prompt }}"
+            git push origin main
+          fi
