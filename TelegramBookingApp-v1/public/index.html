@@ -372,7 +372,10 @@
       <div class="card">
         <div class="card-title">
           <span>Расписание</span>
-          <button class="btn btn-sm btn-secondary" onclick="openBookingModal(null)">+ Запись</button>
+          <div style="display:flex; gap: 8px;">
+            <button class="btn btn-sm btn-secondary" onclick="console.log('Start button clicked!')">Старт</button>
+            <button class="btn btn-sm btn-secondary" onclick="openBookingModal(null)">+ Запись</button>
+          </div>
         </div>
         <div id="schedule-list"></div>
       </div>
@@ -527,7 +530,7 @@
     const hintColorRgb = hexToRgb(tg.themeParams.hint_color || '#8e8e93');
 
     // Set RGB components for use in rgba()
-    root.style.setProperty('--card-bg-rgb', bgColorRgb);
+    root.style.setProperty('--card-bg-rgb', bgColorRRgb);
     root.style.setProperty('--bg-rgb', secondaryBgColorRgb);
     root.style.setProperty('--hint-rgb', hintColorRgb);
 
