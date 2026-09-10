@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Beauty Agent Pro</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
@@ -16,8 +16,8 @@
       --border: rgba(60, 60, 67, 0.12);
       --success: #34c759;
       --danger: #ff3b30;
-      --radius-lg: 14px;
-      --radius-md: 10px;
+      --radius-lg: 18px; /* Slightly larger radius for overall iOS feel */
+      --radius-md: 12px; /* Slightly larger radius for smaller elements */
     }
 
     * {
@@ -34,19 +34,20 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0px); /* Account for home indicator */
     }
 
     /* Хедер */
     .app-header {
       background: var(--card-bg);
-      padding: 12px 16px;
+      padding: 16px 16px;
       text-align: center;
       border-bottom: 0.5px solid var(--border);
       box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow for depth, iOS-like */
     }
 
     .app-header-title {
-      font-weight: 700; /* Slightly bolder for main title */
+      font-weight: 700; 
       font-size: 17px;
     }
 
@@ -61,14 +62,14 @@
     .app-content {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px 80px 16px;
+      padding: 16px 16px 80px 16px; /* Increased top padding, 80px for tab bar */
     }
 
     /* Карточки */
     .card {
       background: var(--card-bg);
       border-radius: var(--radius-lg);
-      padding: 14px 16px;
+      padding: 16px 16px;
       margin-bottom: 12px;
       border: 0.5px solid var(--border);
     }
@@ -88,7 +89,7 @@
     /* Лента дней */
     .days-ribbon {
       display: flex;
-      gap: 6px;
+      gap: 8px; /* Slightly more gap between chips */
       overflow-x: auto;
       scrollbar-width: none;
       padding-bottom: 2px;
@@ -96,8 +97,8 @@
     .days-ribbon::-webkit-scrollbar { display: none; }
 
     .day-chip {
-      flex: 0 0 54px;
-      padding: 8px 0;
+      flex: 0 0 58px; /* Slightly wider chips */
+      padding: 9px 0;
       background: var(--bg);
       border-radius: var(--radius-md);
       text-align: center;
@@ -111,18 +112,18 @@
       color: var(--primary-text);
     }
 
-    .day-chip .wk { font-size: 10px; text-transform: uppercase; font-weight: 600; opacity: 0.7; }
-    .day-chip .num { font-size: 16px; font-weight: 700; margin-top: 2px; }
+    .day-chip .wk { font-size: 11px; text-transform: uppercase; font-weight: 600; opacity: 0.7; }
+    .day-chip .num { font-size: 17px; font-weight: 700; margin-top: 2px; }
 
     /* Элементы списков */
     .list-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 12px;
+      padding: 12px 14px; /* Increased padding for better touch targets */
       background: var(--bg);
       border-radius: var(--radius-md);
-      margin-bottom: 6px;
+      margin-bottom: 8px; /* Slightly more space between list items */
       transition: background 0.15s ease; /* Smooth transition on tap */
       cursor: pointer; /* Indicate clickable */
     }
@@ -147,26 +148,26 @@
       color: var(--danger);
       font-size: 13px;
       font-weight: 600;
-      width: 26px;
-      height: 26px;
+      width: 28px; /* Slightly larger delete button */
+      height: 28px; /* Slightly larger delete button */
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      margin-left: 8px;
+      margin-left: 10px; /* Slightly more margin */
     }
 
     /* Кнопки и инпуты */
     .input-field, select {
       width: 100%;
-      padding: 11px 12px;
+      padding: 12px 14px; /* Increased padding for better touch targets */
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       background: var(--bg);
       color: var(--text);
       font-size: 15px;
-      margin-bottom: 10px;
+      margin-bottom: 12px; /* Slightly more margin below inputs */
       outline: none;
       -webkit-appearance: none; /* For selects */
       -moz-appearance: none; /* For selects */
@@ -175,22 +176,23 @@
 
     .input-field:focus, select:focus {
       border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); /* Subtle glow on focus */
     }
 
     /* Custom arrow for selects */
     select {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Hint color chevron */
       background-repeat: no-repeat;
-      background-position: right 8px center;
-      background-size: 16px;
-      padding-right: 30px; /* Make space for the arrow */
+      background-position: right 10px center;
+      background-size: 18px; /* Slightly larger arrow */
+      padding-right: 36px; /* Make space for the arrow */
     }
 
     .btn {
       width: 100%;
-      padding: 12px;
+      padding: 13px;
       border: none;
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg); /* Larger radius for buttons, like cards */
       background: var(--primary);
       color: var(--primary-text);
       font-weight: 600;
@@ -204,12 +206,13 @@
     .btn-secondary {
       background: rgba(0, 122, 255, 0.1);
       color: var(--primary);
+      border-radius: var(--radius-lg);
     }
 
     .btn-sm {
-      padding: 5px 12px;
+      padding: 6px 14px; /* Slightly more padding for small buttons */
       font-size: 12px;
-      border-radius: 16px;
+      border-radius: 18px; /* Keep appropriate radius for small buttons */
       width: auto;
     }
 
@@ -217,11 +220,12 @@
     .tab-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      height: 56px;
+      height: 58px; /* Slightly taller tab bar for better touch targets */
       background: var(--card-bg);
       display: flex;
       border-top: 0.5px solid var(--border);
       z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0px); /* Account for iPhone X notch bottom bar */
     }
 
     .tab-item {
@@ -242,7 +246,7 @@
       font-weight: 600;
     }
 
-    .tab-item .icon { font-size: 18px; }
+    .tab-item .icon { font-size: 20px; /* Slightly larger icons */ }
 
     /* Модальное окно */
     .modal {
@@ -265,9 +269,9 @@
     .modal-content {
       width: 100%;
       background: var(--card-bg);
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
-      padding: 16px 16px 28px 16px;
+      border-top-left-radius: 20px; /* Slightly larger radius for modals */
+      border-top-right-radius: 20px;
+      padding: 16px 16px 34px 16px; /* Increased bottom padding for home indicator */
       max-height: 85vh;
       overflow-y: auto;
     }
@@ -277,15 +281,15 @@
       height: 4px;
       background: var(--border);
       border-radius: 2px;
-      margin: 0 auto 14px auto;
+      margin: 0 auto 16px auto; /* Slightly more space below handle */
     }
 
     .modal-form-label {
-      font-size: 15px; /* Slightly larger than card-title */
-      font-weight: 500;
-      color: var(--text); /* Main text color, not hint */
-      margin-bottom: 8px; /* Spacing below label */
-      display: block; /* Make it block for proper spacing */
+      font-size: 15px;
+      font-weight: 500; 
+      color: var(--text);
+      margin-bottom: 6px; /* Slightly less gap between label and input */
+      display: block;
     }
 
     .hidden { display: none !important; }
@@ -440,7 +444,7 @@
 
 <script>
   const tg = window.Telegram?.WebApp;
-  if (tg) { tg.ready(); tg.expand(); }
+  if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor(tg.themeParams.bg_color || '#ffffff'); tg.setBackgroundColor(tg.themeParams.secondary_bg_color || '#f2f2f7');}
 
   let appState = {
     selectedDate: getTodayStr(),
