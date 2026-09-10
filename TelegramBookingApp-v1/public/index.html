@@ -7,25 +7,28 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --ios-bg-glass: rgba(255, 255, 255, 0.45);
-      --ios-card-glass: rgba(255, 255, 255, 0.65);
-      --ios-border: rgba(255, 255, 255, 0.5);
+      /* iOS 26/27 Light Theme Glassmorphism & Colors */
+      --ios-bg-glass: rgba(255, 255, 255, 0.6);
+      --ios-card-glass: rgba(255, 255, 255, 0.8);
+      --ios-border: rgba(255, 255, 255, 0.6);
       --ios-accent: #007AFF;
       --ios-accent-gradient: linear-gradient(135deg, #007AFF 0%, #00C6FF 100%);
       --ios-text-primary: #000000;
       --ios-text-secondary: rgba(60, 60, 67, 0.6);
       --ios-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.08);
-      --ios-blur: blur(25px) saturate(190%);
+      --ios-blur-filter: blur(25px) saturate(190%); /* Renamed for clarity */
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --ios-bg-glass: rgba(25, 25, 30, 0.5);
-        --ios-card-glass: rgba(35, 35, 45, 0.65);
-        --ios-border: rgba(255, 255, 255, 0.12);
+        /* iOS 26/27 Dark Theme Glassmorphism & Colors */
+        --ios-bg-glass: rgba(30, 30, 40, 0.4); /* More transparent, slightly lighter for a modern dark glass look */
+        --ios-card-glass: rgba(40, 40, 50, 0.55); /* More transparent, slightly lighter */
+        --ios-border: rgba(255, 255, 255, 0.15); /* Slightly brighter for better definition */
         --ios-text-primary: #FFFFFF;
         --ios-text-secondary: rgba(235, 235, 245, 0.6);
         --ios-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.37);
+        --ios-blur-filter: blur(25px) saturate(190%) brightness(110%); /* Added brightness for dark mode contrast */
       }
     }
 
@@ -71,8 +74,8 @@
     /* Liquid Glass Card */
     .glass-card {
       background: var(--ios-card-glass);
-      backdrop-filter: var(--ios-blur);
-      -webkit-backdrop-filter: var(--ios-blur);
+      backdrop-filter: var(--ios-blur-filter);
+      -webkit-backdrop-filter: var(--ios-blur-filter);
       border: 1px solid var(--ios-border);
       border-radius: 24px;
       padding: 20px;
@@ -97,17 +100,18 @@
     .calendar-nav {
       background: var(--ios-bg-glass);
       border: 1px solid var(--ios-border);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
+      width: 44px; /* Touch-friendly tap target */
+      height: 44px; /* Touch-friendly tap target */
+      border-radius: 18px; /* Softer square, modern iOS button style */
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 16px;
+      font-weight: 500; /* Added font-weight */
       color: var(--ios-accent);
       cursor: pointer;
-      backdrop-filter: blur(10px);
-      transition: transform 0.15s ease;
+      backdrop-filter: var(--ios-blur-filter); /* Use new blur variable */
+      transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
     }
 
     .calendar-nav:active {
@@ -131,13 +135,15 @@
     }
 
     .day-number {
+      min-width: 44px; /* Touch-friendly tap target */
+      min-height: 44px; /* Touch-friendly tap target */
       aspect-ratio: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 15px;
       font-weight: 500;
-      border-radius: 50%;
+      border-radius: 18px; /* Consistent modern iOS button style */
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
@@ -175,7 +181,7 @@
       font-weight: 600;
       text-align: center;
       cursor: pointer;
-      backdrop-filter: blur(10px);
+      backdrop-filter: var(--ios-blur-filter); /* Use new blur variable */
       transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
@@ -229,7 +235,7 @@
 
   <div class="glass-card">
     <div class="calendar-header">
-      <button class="calendar-nav" id="prev-month">✕</button>
+      <button class="calendar-nav" id="prev-month">❮</button>
       <h2 id="month-year-label">Месяц</h2>
       <button class="calendar-nav" id="next-month">❯</button>
     </div>
@@ -301,6 +307,7 @@
     }
 
     function selectDate(element, day, month, year) {
+      tg.HapticFeedback.impactOccurred('light'); // Native haptic feedback
       document.querySelectorAll('.day-number').forEach(e => e.classList.remove('selected'));
       element.classList.add('selected');
       selectedDate = `${day}.${month + 1}.${year}`;
@@ -313,6 +320,7 @@
     }
 
     function selectTime(element, time) {
+      tg.HapticFeedback.impactOccurred('light'); // Native haptic feedback
       document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
       element.classList.add('selected');
       selectedTime = time;
@@ -332,17 +340,20 @@
 
     function confirmBooking() {
       if (selectedDate && selectedTime) {
+        tg.HapticFeedback.impactOccurred('medium'); // Native haptic feedback for confirmation
         tg.sendData(JSON.stringify({ date: selectedDate, time: selectedTime }));
         tg.close();
       }
     }
 
     document.getElementById('prev-month').onclick = () => {
+      tg.HapticFeedback.impactOccurred('light'); // Native haptic feedback
       currentDate.setMonth(currentDate.getMonth() - 1);
       renderCalendar();
     };
 
     document.getElementById('next-month').onclick = () => {
+      tg.HapticFeedback.impactOccurred('light'); // Native haptic feedback
       currentDate.setMonth(currentDate.getMonth() + 1);
       renderCalendar();
     };
