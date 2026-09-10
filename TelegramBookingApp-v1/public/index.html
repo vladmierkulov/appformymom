@@ -2,1085 +2,352 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Beauty Agent Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Бронирование</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      /* Telegram theme variables - these will be overridden by JS if tg exists */
-      --tg-theme-bg-color: #ffffff;
-      --tg-theme-secondary-bg-color: #f2f2f7;
-      --tg-theme-text-color: #000000;
-      --tg-theme-hint-color: #8e8e93;
-      --tg-theme-button-color: #007aff;
-      --tg-theme-button-text-color: #ffffff;
-
-      /* Derived semantic variables */
-      --bg: var(--tg-theme-secondary-bg-color);
-      --card-bg: var(--tg-theme-bg-color);
-      --text: var(--tg-theme-text-color);
-      --hint: var(--tg-theme-hint-color);
-      --primary: var(--tg-theme-button-color);
-      --primary-text: var(--tg-theme-button-text-color);
-      --success: #34c759;
-      --danger: #ff3b30;
-
-      /* iOS style radii */
-      --radius-lg: 18px;
-      --radius-md: 12px;
-
-      /* Dynamic Transparent colors (will be set by JS on theme load) */
-      --bg-transparent: rgba(242, 242, 247, 0.85); /* Default light theme fallback */
-      --card-bg-transparent: rgba(255, 255, 255, 0.85); /* Default light theme fallback */
-      --border-transparent: rgba(60, 60, 67, 0.1); /* Default light theme fallback, from hint color */
+      --ios-bg-glass: rgba(255, 255, 255, 0.45);
+      --ios-card-glass: rgba(255, 255, 255, 0.65);
+      --ios-border: rgba(255, 255, 255, 0.5);
+      --ios-accent: #007AFF;
+      --ios-accent-gradient: linear-gradient(135deg, #007AFF 0%, #00C6FF 100%);
+      --ios-text-primary: #000000;
+      --ios-text-secondary: rgba(60, 60, 67, 0.6);
+      --ios-shadow: 0 12px 32px 0 rgba(31, 38, 135, 0.08);
+      --ios-blur: blur(25px) saturate(190%);
     }
 
     @media (prefers-color-scheme: dark) {
-      /* Default dark theme fallback for transparent colors if JS fails or not in Telegram */
       :root {
-        --bg-transparent: rgba(28, 28, 30, 0.85);
-        --card-bg-transparent: rgba(0, 0, 0, 0.85);
-        --border-transparent: rgba(255, 255, 255, 0.1);
+        --ios-bg-glass: rgba(25, 25, 30, 0.5);
+        --ios-card-glass: rgba(35, 35, 45, 0.65);
+        --ios-border: rgba(255, 255, 255, 0.12);
+        --ios-text-primary: #FFFFFF;
+        --ios-text-secondary: rgba(235, 235, 245, 0.6);
+        --ios-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.37);
       }
     }
 
     * {
       box-sizing: border-box;
-      margin: 0; padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     body {
-      background-color: var(--bg); /* Fallback for older browsers or no JS */
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+      background: var(--tg-theme-bg-color, #f0f2f5);
+      color: var(--ios-text-primary);
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-      
-      /* Liquid glass background: subtle gradient blending theme colors */
-      background-image: linear-gradient(to bottom right, var(--bg), color-mix(in srgb, var(--bg), var(--card-bg) 20%));
-      background-attachment: fixed;
-      background-size: cover; /* Ensure gradient covers the whole background */
+      gap: 20px;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
     /* Header */
-    .app-header {
-      background: var(--card-bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(20px) saturate(180%); /* Liquid glass effect */
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      padding: 16px 16px;
+    .header {
       text-align: center;
-      border-bottom: 0.5px solid var(--border-transparent); /* Softer border */
-      box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.04); /* Subtle, layered shadow */
-      position: sticky; /* Make it sticky for blur to work with scrolling content */
-      top: 0;
-      z-index: 10;
+      margin-top: 8px;
     }
 
-    .app-header-title {
-      font-weight: 700; 
-      font-size: 17px;
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
     }
 
-    .cloud-status {
-      font-size: 11px;
-      color: var(--success);
-      font-weight: 500;
-      margin-top: 2px;
+    .header p {
+      font-size: 14px;
+      color: var(--ios-text-secondary);
+      margin-top: 4px;
+      font-weight: 400;
     }
 
-    /* Content */
-    .app-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 16px 80px 16px; /* Increased bottom padding for tab bar */
+    /* Liquid Glass Card */
+    .glass-card {
+      background: var(--ios-card-glass);
+      backdrop-filter: var(--ios-blur);
+      -webkit-backdrop-filter: var(--ios-blur);
+      border: 1px solid var(--ios-border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--ios-shadow);
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
-    /* Cards */
-    .card {
-      background: var(--card-bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(15px) saturate(180%); /* Liquid glass effect */
-      -webkit-backdrop-filter: blur(15px) saturate(180%);
-      border-radius: var(--radius-lg);
-      padding: 16px 16px;
-      margin-bottom: 12px;
-      border: 0.5px solid var(--border-transparent); /* Softer border */
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03); /* More pronounced, soft shadow */
-    }
-
-    .card-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--hint);
-      text-transform: uppercase;
-      letter-spacing: -0.1px;
-      margin-bottom: 10px;
+    /* Calendar Header */
+    .calendar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 16px;
     }
 
-    /* Days Ribbon */
-    .days-ribbon {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      padding-bottom: 2px;
-      padding-top: 2px; /* Add a little padding for visual balance */
-    }
-    .days-ribbon::-webkit-scrollbar { display: none; }
-
-    .day-chip {
-      flex: 0 0 58px;
-      padding: 9px 0;
-      background: var(--bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(10px); /* Lighter blur for chips */
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: var(--radius-md);
-      text-align: center;
-      cursor: pointer;
-      border: 0.5px solid var(--border-transparent); /* Softer border */
-      transition: all 0.15s ease;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03); /* Subtle shadow for chips */
-    }
-
-    .day-chip.selected {
-      background: var(--primary); /* Keep solid for selected for clear contrast */
-      color: var(--primary-text);
-      border-color: var(--primary); /* Solid border for selected */
-      box-shadow: 0 1px 4px rgba(0, 122, 255, 0.2); /* Shadow for selected state */
-    }
-
-    .day-chip .wk { font-size: 11px; text-transform: uppercase; font-weight: 600; opacity: 0.7; }
-    .day-chip .num { font-size: 17px; font-weight: 700; margin-top: 2px; }
-
-    /* List Items */
-    .list-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 14px;
-      background: var(--bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(10px); /* Lighter blur for list items */
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: var(--radius-md);
-      margin-bottom: 8px;
-      border: 0.5px solid var(--border-transparent); /* Softer border */
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-      transition: background 0.15s ease;
-      cursor: pointer;
-    }
-
-    .list-item:active {
-      background: color-mix(in srgb, var(--primary) 10%, var(--bg-transparent)); /* Blend with primary on press */
-    }
-    .list-item.static {
-        cursor: default;
-        background: var(--bg-transparent);
-    }
-    .list-item.static:active {
-        background: var(--bg-transparent);
-    }
-
-    .list-item:last-child { margin-bottom: 0; }
-
-    .delete-btn {
-      background: rgba(255, 59, 48, 0.1); /* Specific fixed color, can remain */
-      border: none;
-      color: var(--danger);
-      font-size: 13px;
+    .calendar-header h2 {
+      font-size: 18px;
       font-weight: 600;
-      width: 28px;
-      height: 28px;
+      letter-spacing: -0.3px;
+    }
+
+    .calendar-nav {
+      background: var(--ios-bg-glass);
+      border: 1px solid var(--ios-border);
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 16px;
+      color: var(--ios-accent);
       cursor: pointer;
-      margin-left: 10px;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s ease;
     }
 
-    /* Buttons and Inputs */
-    .input-field, select {
-      width: 100%;
-      padding: 12px 14px;
-      border: 0.5px solid var(--border-transparent); /* Softer border */
-      border-radius: var(--radius-md);
-      background: var(--bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(5px); /* Very light blur for inputs */
-      -webkit-backdrop-filter: blur(5px);
-      color: var(--text);
-      font-size: 15px;
-      margin-bottom: 12px;
-      outline: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
+    .calendar-nav:active {
+      transform: scale(0.9);
     }
 
-    .input-field:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); /* Softer focus glow */
-      background: var(--card-bg-transparent); /* Slightly lighter on focus */
+    /* Grid Layout */
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      text-align: center;
     }
 
-    /* Custom arrow for selects */
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 18px;
-      padding-right: 36px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 13px;
-      border: none;
-      border-radius: var(--radius-lg);
-      background: var(--primary);
-      color: var(--primary-text);
-      font-weight: 600;
-      font-size: 15px;
-      cursor: pointer;
-      transition: opacity 0.15s ease;
-      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent); /* Subtle button shadow */
-    }
-
-    .btn:active { opacity: 0.8; }
-
-    .btn-secondary {
-      background: rgba(0, 122, 255, 0.1); /* Specific fixed color, can remain */
-      color: var(--primary);
-      border-radius: var(--radius-lg);
-      box-shadow: none; /* Secondary buttons usually don't have strong shadows */
-    }
-
-    .btn-sm {
-      padding: 6px 14px;
+    .day-name {
       font-size: 12px;
-      border-radius: 18px;
-      width: auto;
+      font-weight: 600;
+      color: var(--ios-text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 4px;
     }
 
-    /* Bottom Navigation */
-    .tab-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 58px;
-      background: var(--card-bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(25px) saturate(180%); /* Stronger blur for tab bar */
-      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    .day-number {
+      aspect-ratio: 1;
       display: flex;
-      border-top: 0.5px solid var(--border-transparent); /* Softer border */
-      z-index: 100;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-      box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.05), 0 -4px 12px rgba(0, 0, 0, 0.03); /* Soft shadow upwards */
-    }
-
-    .tab-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--hint);
-      cursor: pointer;
-      gap: 2px;
-    }
-
-    .tab-item.active {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .tab-item .icon { font-size: 22px; /* Slightly larger icons for better visibility and touch targets */ }
-
-    /* Modal */
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.4);
-      display: flex;
-      align-items: flex-end;
-      z-index: 200;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-
-    .modal.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-content {
-      width: 100%;
-      background: var(--card-bg-transparent); /* Semi-transparent background */
-      backdrop-filter: blur(30px) saturate(180%); /* Stronger blur for modals */
-      -webkit-backdrop-filter: blur(30px) saturate(180%);
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      padding: 16px 16px 34px 16px;
-      max-height: 85vh;
-      overflow-y: auto;
-      border-top: 0.5px solid var(--border-transparent); /* Subtle top border */
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1), 0 -8px 20px rgba(0, 0, 0, 0.08); /* Stronger shadows for modals */
-    }
-
-    .sheet-handle {
-      width: 36px;
-      height: 4px;
-      background: var(--border-transparent); /* Use transparent border color */
-      border-radius: 2px;
-      margin: 0 auto 16px auto;
-    }
-
-    .modal-form-label {
       font-size: 15px;
-      font-weight: 500; 
-      color: var(--text);
-      margin-bottom: 6px;
-      display: block;
+      font-weight: 500;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
     }
 
-    .hidden { display: none !important; }
+    .day-number.empty {
+      cursor: default;
+    }
+
+    .day-number:not(.empty):active {
+      transform: scale(0.88);
+    }
+
+    .day-number.selected {
+      background: var(--ios-accent-gradient);
+      color: #FFFFFF;
+      font-weight: 700;
+      box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35);
+    }
+
+    /* Time Slots Grid */
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .time-slot {
+      background: var(--ios-bg-glass);
+      border: 1px solid var(--ios-border);
+      padding: 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .time-slot:active {
+      transform: scale(0.94);
+    }
+
+    .time-slot.selected {
+      background: var(--ios-accent-gradient);
+      color: #FFFFFF;
+      border-color: transparent;
+      box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35);
+    }
+
+    /* Main Floating CTA Button */
+    .ios-btn {
+      width: 100%;
+      background: var(--ios-accent-gradient);
+      color: #FFFFFF;
+      border: none;
+      padding: 16px;
+      border-radius: 20px;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
+      transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+      margin-top: auto;
+    }
+
+    .ios-btn:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .ios-btn:not(:disabled):active {
+      transform: scale(0.96);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    }
   </style>
 </head>
 <body>
 
-  <div class="app-header">
-    <div class="app-header-title" id="header-title">Журнал записей</div>
-    <div class="cloud-status" id="cloud-status">● Синхронизировано с Telegram</div>
+  <div class="header">
+    <h1>Выбор времени</h1>
+    <p>Выберите удобную дату приема</p>
   </div>
 
-  <div class="app-content">
+  <div class="glass-card">
+    <div class="calendar-header">
+      <button class="calendar-nav" id="prev-month">✕</button>
+      <h2 id="month-year-label">Месяц</h2>
+      <button class="calendar-nav" id="next-month">❯</button>
+    </div>
     
-    <!-- ТАБ 1: ЗАПИСИ -->
-    <div id="tab-schedule">
-      <div class="card">
-        <div class="card-title">Дата</div>
-        <div class="days-ribbon" id="days-container"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <span>Расписание</span>
-          <div style="display:flex; gap: 8px;">
-            <button class="btn btn-sm btn-secondary" onclick="console.log('Start button clicked!')">Старт</button>
-            <button class="btn btn-sm btn-secondary" onclick="openBookingModal(null)">+ Запись</button>
-          </div>
-        </div>
-        <div id="schedule-list"></div>
-      </div>
-    </div>
-
-    <!-- ТАБ 2: КЛИЕНТЫ -->
-    <div id="tab-clients" class="hidden">
-      <div class="card">
-        <div class="card-title">
-          <span>База клиентов</span>
-          <button class="btn btn-sm btn-secondary" onclick="openClientModal(null)">+ Клиент</button>
-        </div>
-        <div id="clients-list"></div>
-      </div>
-    </div>
-
-    <!-- ТАБ 3: УСЛУГИ -->
-    <div id="tab-services" class="hidden">
-      <div class="card">
-        <div class="card-title">
-          <span>Каталог услуг</span>
-          <button class="btn btn-sm btn-secondary" onclick="openServiceModal(null)">+ Услуга</button>
-        </div>
-        <div id="services-list"></div>
-      </div>
-    </div>
-
-    <!-- ТАБ 4: АНАЛИТИКА И РЕЗЕРВНОЕ КОПИРОВАНИЕ -->
-    <div id="tab-analytics" class="hidden">
-      <div class="card">
-        <div class="card-title">Доход за сегодня</div>
-        <h2 id="today-revenue" style="color: var(--success); font-size: 26px; font-weight: 700; margin-bottom: 2px;">0 €</h2>
-        <div style="font-size: 13px; color: var(--hint);" id="today-count">Завершено записей: 0</div>
-      </div>
-      <div class="card">
-        <div class="card-title">Резервное копирование</div>
-        <p style="font-size: 12px; color: var(--hint); margin-bottom: 12px; line-height: 1.4;">
-          Данные автоматически сохраняются в вашем облаке Telegram. Вы также можете скачивать локальные копии.
-        </p>
-        <button class="btn btn-secondary" style="margin-bottom: 8px;" onclick="exportDataBackup()">Скачать бэкап (JSON)</button>
-        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importDataBackup(event)">
-        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Восстановить из файла</button>
-      </div>
-    </div>
-
+    <div class="days-grid" id="days-container"></div>
   </div>
 
-  <!-- ТАББАР -->
-  <div class="tab-bar">
-    <div class="tab-item active" onclick="switchTab('schedule', 'Журнал записей')">
-      <span class="icon">📅</span>
-      <span>Записи</span>
-    </div>
-    <div class="tab-item" onclick="switchTab('clients', 'Мои клиенты')">
-      <span class="icon">👤</span>
-      <span>Клиенты</span>
-    </div>
-    <div class="tab-item" onclick="switchTab('services', 'Услуги и цены')">
-      <span class="icon">✂️</span>
-      <span>Услуги</span>
-    </div>
-    <div class="tab-item" onclick="switchTab('analytics', 'Доходы и бэкап')">
-      <span class="icon">📊</span>
-      <span>Доходы</span>
+  <div class="glass-card" id="time-section" style="display: none;">
+    <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--ios-text-secondary);">Доступные слоты</h2>
+    <div class="time-grid" id="time-container">
+      <div class="time-slot" onclick="selectTime(this, '09:00')">09:00</div>
+      <div class="time-slot" onclick="selectTime(this, '11:30')">11:30</div>
+      <div class="time-slot" onclick="selectTime(this, '14:00')">14:00</div>
+      <div class="time-slot" onclick="selectTime(this, '16:30')">16:30</div>
+      <div class="time-slot" onclick="selectTime(this, '19:00')">19:00</div>
     </div>
   </div>
 
-  <!-- МОДАЛКА: ЗАПИСЬ -->
-  <div class="modal" id="modal-booking">
-    <div class="modal-content">
-      <div class="sheet-handle"></div>
-      <h3 id="booking-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Быстрая запись</h3>
-      
-      <label for="booking-client-input" class="modal-form-label">Имя клиента</label>
-      <input type="text" id="booking-client-input" class="input-field" placeholder="Имя клиента..." list="clients-datalist">
-      <datalist id="clients-datalist"></datalist>
+  <button class="ios-btn" id="submit-btn" disabled onclick="confirmBooking()">Подтвердить запись</button>
 
-      <label for="booking-phone-input" class="modal-form-label">Телефон</label>
-      <input type="tel" id="booking-phone-input" class="input-field" placeholder="Телефон">
-
-      <label for="booking-service-select" class="modal-form-label">Услуга</label>
-      <select id="booking-service-select" class="input-field"></select>
-
-      <label for="booking-price-input" class="modal-form-label">Цена (€)</label>
-      <input type="number" id="booking-price-input" class="input-field" placeholder="0" min="0" step="0.01">
-
-      <label for="booking-time" class="modal-form-label">Время</label>
-      <input type="time" id="booking-time" class="input-field" value="10:00">
-
-      <button class="btn" onclick="saveBooking()">Сохранить запись</button>
-      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
-      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-booking-btn" onclick="deleteBookingFromModal()">Удалить запись</button>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА: КЛИЕНТ -->
-  <div class="modal" id="modal-client">
-    <div class="modal-content">
-      <div class="sheet-handle"></div>
-      <h3 id="client-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новый клиент</h3>
-      <input type="hidden" id="editing-client-id">
-      <label for="new-client-name" class="modal-form-label">Имя клиента</label>
-      <input type="text" id="new-client-name" class="input-field" placeholder="Имя клиента">
-      <label for="new-client-phone" class="modal-form-label">Телефон</label>
-      <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
-      <button class="btn" onclick="saveClient()">Сохранить</button>
-      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
-      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-client-btn" onclick="deleteClientFromModal()">Удалить клиента</button>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА: УСЛУГА -->
-  <div class="modal" id="modal-service">
-    <div class="modal-content">
-      <div class="sheet-handle"></div>
-      <h3 id="service-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новая услуга</h3>
-      <input type="hidden" id="editing-service-id">
-      <label for="new-service-title" class="modal-form-label">Название услуги</label>
-      <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
-      <label for="new-service-price" class="modal-form-label">Цена (€)</label>
-      <input type="number" id="new-service-price" class="input-field" placeholder="0" min="0" step="0.01">
-      <button class="btn" onclick="saveService()">Сохранить</button>
-      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
-      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-service-btn" onclick="deleteServiceFromModal()">Удалить услугу</button>
-    </div>
-  </div>
-
-<script>
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
+  <script>
+    const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    // Set header and background color based on Telegram theme
-    tg.setHeaderColor(tg.themeParams.bg_color || '#ffffff');
-    tg.setBackgroundColor(tg.themeParams.secondary_bg_color || '#f2f2f7');
 
-    // Function to convert hex to RGB string (e.g., "255, 255, 255")
-    function hexToRgb(hex) {
-      if (!hex || typeof hex !== 'string') return '0, 0, 0';
-      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-      hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-        return r + r + g + g + b + b;
+    let currentDate = new Date();
+    let selectedDate = null;
+    let selectedTime = null;
+
+    const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+    // Установка иконки навигации
+    document.getElementById('prev-month').innerText = '❮';
+
+    function renderCalendar() {
+      const container = document.getElementById('days-container');
+      container.innerHTML = '';
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      document.getElementById('month-year-label').innerText = `${monthNames[month]} ${year}`;
+
+      dayNames.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'day-name';
+        el.innerText = d;
+        container.appendChild(el);
       });
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0';
-    }
 
-    // Set dynamic transparent CSS variables
-    const root = document.documentElement;
-    const bgColorRgb = hexToRgb(tg.themeParams.bg_color || '#ffffff');
-    const secondaryBgColorRgb = hexToRgb(tg.themeParams.secondary_bg_color || '#f2f2f7');
-    const hintColorRgb = hexToRgb(tg.themeParams.hint_color || '#8e8e93');
+      const firstDay = new Date(year, month, 1).getDay();
+      const startingPoint = firstDay === 0 ? 6 : firstDay - 1;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Set RGB components for use in rgba()
-    root.style.setProperty('--card-bg-rgb', bgColorRRgb);
-    root.style.setProperty('--bg-rgb', secondaryBgColorRgb);
-    root.style.setProperty('--hint-rgb', hintColorRgb);
-
-    // Set transparent versions of main background colors
-    root.style.setProperty('--card-bg-transparent', `rgba(${bgColorRgb}, 0.85)`);
-    root.style.setProperty('--bg-transparent', `rgba(${secondaryBgColorRgb}, 0.85)`);
-    // Set transparent border color based on hint color for good contrast
-    root.style.setProperty('--border-transparent', `rgba(${hintColorRgb}, 0.2)`);
-  } else {
-    // Fallback if not in Telegram Web App context, set default transparent colors
-    const root = document.documentElement;
-    root.style.setProperty('--card-bg-rgb', '255, 255, 255');
-    root.style.setProperty('--bg-rgb', '242, 242, 247');
-    root.style.setProperty('--hint-rgb', '142, 142, 147');
-
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.style.setProperty('--card-bg-rgb', '0, 0, 0');
-        root.style.setProperty('--bg-rgb', '28, 28, 30');
-        root.style.setProperty('--hint-rgb', '142, 142, 147');
-    }
-    root.style.setProperty('--card-bg-transparent', `rgba(${root.style.getPropertyValue('--card-bg-rgb')}, 0.85)`);
-    root.style.setProperty('--bg-transparent', `rgba(${root.style.getPropertyValue('--bg-rgb')}, 0.85)`);
-    root.style.setProperty('--border-transparent', `rgba(${root.style.getPropertyValue('--hint-rgb')}, 0.2)`);
-  }
-
-  let appState = {
-    selectedDate: getTodayStr(),
-    clients: [], // {id, name, phone}
-    services: [], // {id, title, price}
-    bookings: [] // {id, date, time, clientName, phone, serviceTitle, price, status}
-  };
-
-  // Temporary variables for editing in modals
-  let editingBookingId = null;
-  let editingClientId = null;
-  let editingServiceId = null;
-
-  function saveState() {
-    const serialized = JSON.stringify(appState);
-    localStorage.setItem('ba_master_state', serialized);
-
-    if (tg?.CloudStorage) {
-      tg.CloudStorage.setItem('ba_master_state', serialized, (err, success) => {
-        const statusEl = document.getElementById('cloud-status');
-        if (success) {
-          statusEl.innerText = '☁️ Сохранено в облаке'; // Use cloud emoji
-          statusEl.style.color = 'var(--success)';
-        } else {
-          statusEl.innerText = '⚫Т Сохранено локально'; // Use dot emoji
-          statusEl.style.color = 'var(--hint)';
-        }
-      });
-    } else {
-      const statusEl = document.getElementById('cloud-status');
-      statusEl.innerText = '⚫Т Сохранено локально';
-      statusEl.style.color = 'var(--hint)';
-    }
-  }
-
-  function loadState(onComplete) {
-    if (tg?.CloudStorage) {
-      tg.CloudStorage.getItem('ba_master_state', (err, value) => {
-        if (!err && value) {
-          try {
-            const loadedState = JSON.parse(value);
-            appState = {
-              selectedDate: loadedState.selectedDate || getTodayStr(),
-              clients: loadedState.clients || [],
-              services: loadedState.services || [],
-              bookings: (loadedState.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default
-            };
-            document.getElementById('cloud-status').innerText = '☁️ Синхронизировано с Telegram';
-            document.getElementById('cloud-status').style.color = 'var(--success)';
-            onComplete();
-            return;
-          } catch(e) { console.error("Failed to parse cloud state", e); }
-        }
-        loadFromLocalStorage();
-        document.getElementById('cloud-status').innerText = '⚫Т Загружено локально';
-        document.getElementById('cloud-status').style.color = 'var(--hint)';
-        onComplete();
-      });
-    } else {
-      loadFromLocalStorage();
-      document.getElementById('cloud-status').innerText = '⚫Т Загружено локально';
-      document.getElementById('cloud-status').style.color = 'var(--hint)';
-      onComplete();
-    }
-  }
-
-  function loadFromLocalStorage() {
-    const localData = localStorage.getItem('ba_master_state');
-    if (localData) {
-      try {
-        const loadedState = JSON.parse(localData);
-        appState = {
-          selectedDate: loadedState.selectedDate || getTodayStr(),
-          clients: loadedState.clients || [],
-          services: loadedState.services || [],
-          bookings: (loadedState.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default
-        };
-      } catch(e) { console.error("Failed to parse local storage state", e); }
-    }
-  }
-
-  function getTodayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-  
-  // Existing switchTab, renderDaysRibbon, etc. functions...
-  function switchTab(tabName, title) {
-    document.querySelectorAll('.app-content > div').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-    
-    document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-    document.getElementById('header-title').innerText = title;
-
-    const activeIdx = ['schedule', 'clients', 'services', 'analytics'].indexOf(tabName);
-    document.querySelectorAll('.tab-item')[activeIdx].classList.add('active');
-
-    if (tabName === 'schedule') renderSchedule();
-    if (tabName === 'clients') renderClients();
-    if (tabName === 'services') renderServices();
-    if (tabName === 'analytics') renderAnalytics();
-  }
-
-  function renderDaysRibbon() {
-    const container = document.getElementById('days-container');
-    container.innerHTML = '';
-    const today = new Date();
-    const wks = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]; // Sun, Mon, Tue, Wed, Thu, Fri, Sat
-
-    for (let i = 0; i < 14; i++) {
-      const d = new Date();
-      d.setDate(today.getDate() + i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
-      const chip = document.createElement('div');
-      chip.className = `day-chip ${dateStr === appState.selectedDate ? 'selected' : ''}`;
-      chip.innerHTML = `<div class="wk">${wks[d.getDay()]}</div><div class="num">${d.getDate()}</div>`;
-      chip.onclick = () => {
-        appState.selectedDate = dateStr;
-        renderDaysRibbon();
-        renderSchedule();
-      };
-      container.appendChild(chip);
-    }
-  }
-
-  function renderSchedule() {
-    const list = document.getElementById('schedule-list');
-    list.innerHTML = '';
-
-    const dayBookings = appState.bookings
-      .filter(b => b.date === appState.selectedDate)
-      .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-
-    if (dayBookings.length === 0) {
-      list.innerHTML = '<div style="text-align:center; color:var(--hint); padding: 14px; font-size:13px;">Записей на этот день нет</div>';
-      return;
-    }
-
-    dayBookings.forEach(b => {
-      const item = document.createElement('div');
-      item.className = 'list-item'; // Make it clickable
-      item.onclick = () => openBookingModal(b.id); // Open for editing
-      item.innerHTML = `
-        <div>
-          <div style="font-weight:700; color:var(--primary); font-size:14px;">${b.time || 'Без времени'}</div>
-          <div style="font-weight:600; font-size:14px; margin-top:1px;">${escapeHtml(b.clientName || 'Гость')}</div>
-          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price.toFixed(2) + ' €' : ''}</div>
-        </div>
-        <div style="display:flex; align-items:center;">
-          <select onchange="event.stopPropagation(); changeBookingStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px; background-color:var(--card-bg-transparent); border:0.5px solid var(--border-transparent); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);">
-            <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
-            <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
-            <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
-          </select>
-        </div>
-      `;
-      list.appendChild(item);
-    });
-  }
-
-  function changeBookingStatus(id, newStatus) {
-    const booking = appState.bookings.find(b => b.id === id);
-    if (booking) {
-      booking.status = newStatus;
-      saveState();
-      renderSchedule();
-      renderAnalytics(); // Update analytics if status changes
-    }
-  }
-
-  function deleteBooking(id) { // Existing delete function
-    appState.bookings = appState.bookings.filter(b => b.id !== id);
-    saveState();
-    renderSchedule();
-    renderAnalytics();
-  }
-
-  function deleteBookingFromModal() { // New function for modal deletion
-    if (editingBookingId) {
-      deleteBooking(editingBookingId);
-      closeModals();
-    }
-  }
-
-  function openBookingModal(bookingId = null) {
-    editingBookingId = bookingId;
-    const bookingModal = document.getElementById('modal-booking');
-    const titleEl = document.getElementById('booking-modal-title');
-    const clientInput = document.getElementById('booking-client-input');
-    const phoneInput = document.getElementById('booking-phone-input');
-    const serviceSelect = document.getElementById('booking-service-select');
-    const priceInput = document.getElementById('booking-price-input');
-    const timeInput = document.getElementById('booking-time');
-    const deleteBtn = document.getElementById('delete-booking-btn');
-
-    // Populate clients datalist
-    const datalist = document.getElementById('clients-datalist');
-    datalist.innerHTML = appState.clients.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
-
-    // Populate services select
-    serviceSelect.innerHTML = `<option value="">-- Без услуги --</option>` + 
-      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price ? s.price.toFixed(2) : 0} €)</option>`).join('');
-
-    if (editingBookingId) {
-      titleEl.innerText = 'Редактировать запись';
-      const booking = appState.bookings.find(b => b.id === editingBookingId);
-      if (booking) {
-        clientInput.value = booking.clientName || '';
-        phoneInput.value = booking.phone || '';
-        serviceSelect.value = appState.services.find(s => s.title === booking.serviceTitle)?.id || '';
-        priceInput.value = booking.price || 0;
-        timeInput.value = booking.time || '10:00';
-        deleteBtn.classList.remove('hidden');
+      for (let i = 0; i < startingPoint; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'day-number empty';
+        container.appendChild(emptyCell);
       }
-    } else {
-      titleEl.innerText = 'Быстрая запись';
-      clientInput.value = '';
-      phoneInput.value = '';
-      serviceSelect.value = '';
-      priceInput.value = 0;
-      timeInput.value = '10:00';
-      deleteBtn.classList.add('hidden');
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-number';
+        cell.innerText = day;
+        cell.onclick = () => selectDate(cell, day, month, year);
+        container.appendChild(cell);
+      }
     }
 
-    // Event listener to update price based on service selection
-    serviceSelect.onchange = () => {
-      const selectedService = appState.services.find(s => s.id == serviceSelect.value);
-      priceInput.value = selectedService ? selectedService.price : 0;
-    };
+    function selectDate(element, day, month, year) {
+      document.querySelectorAll('.day-number').forEach(e => e.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedDate = `${day}.${month + 1}.${year}`;
+      
+      const timeSection = document.getElementById('time-section');
+      timeSection.style.display = 'block';
+      timeSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      checkForm();
+    }
 
-    // Event listener to auto-fill phone from client name
-    clientInput.onchange = () => {
-      const client = appState.clients.find(c => c.name === clientInput.value.trim());
-      if (client) {
-        phoneInput.value = client.phone || '';
+    function selectTime(element, time) {
+      document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedTime = time;
+      checkForm();
+    }
+
+    function checkForm() {
+      const btn = document.getElementById('submit-btn');
+      if (selectedDate && selectedTime) {
+        btn.disabled = false;
+        btn.innerText = `Записаться на ${selectedDate} в ${selectedTime}`;
       } else {
-        phoneInput.value = ''; // Clear if client not found
+        btn.disabled = true;
+        btn.innerText = 'Подтвердить запись';
       }
+    }
+
+    function confirmBooking() {
+      if (selectedDate && selectedTime) {
+        tg.sendData(JSON.stringify({ date: selectedDate, time: selectedTime }));
+        tg.close();
+      }
+    }
+
+    document.getElementById('prev-month').onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
     };
 
-    bookingModal.classList.add('open');
-  }
-
-  function saveBooking() {
-    const clientName = document.getElementById('booking-client-input').value.trim();
-    const phone = document.getElementById('booking-phone-input').value.trim();
-    const serviceId = document.getElementById('booking-service-select').value;
-    const price = Number(document.getElementById('booking-price-input').value) || 0;
-    const time = document.getElementById('booking-time').value;
-
-    if (!clientName) {
-        alert('Имя клиента не может быть пустым.'); // Client name cannot be empty.
-        return;
-    }
-
-    let serviceTitle = 'Без услуги';
-    if (serviceId) {
-      const s = appState.services.find(serv => serv.id == serviceId);
-      if (s) {
-        serviceTitle = s.title;
-      }
-    }
-
-    const newBookingData = {
-      date: appState.selectedDate,
-      time: time || '10:00',
-      clientName: clientName,
-      phone: phone,
-      serviceTitle: serviceTitle,
-      price: price,
-      status: 'confirmed'
+    document.getElementById('next-month').onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
     };
 
-    if (editingBookingId) {
-      const index = appState.bookings.findIndex(b => b.id === editingBookingId);
-      if (index !== -1) {
-        appState.bookings[index] = { ...appState.bookings[index], ...newBookingData };
-      }
-    } else {
-      appState.bookings.push({ id: Date.now(), ...newBookingData });
-    }
-
-    saveState();
-    closeModals();
-    renderSchedule();
-    renderAnalytics();
-  }
-
-  function openClientModal(clientId = null) {
-    editingClientId = clientId;
-    const clientModal = document.getElementById('modal-client');
-    const titleEl = document.getElementById('client-modal-title');
-    const nameInput = document.getElementById('new-client-name');
-    const phoneInput = document.getElementById('new-client-phone');
-    const deleteBtn = document.getElementById('delete-client-btn');
-
-    if (editingClientId) {
-      titleEl.innerText = 'Редактировать клиента';
-      const client = appState.clients.find(c => c.id === editingClientId);
-      if (client) {
-        nameInput.value = client.name || '';
-        phoneInput.value = client.phone || '';
-        deleteBtn.classList.remove('hidden');
-      }
-    } else {
-      titleEl.innerText = 'Новый клиент';
-      nameInput.value = '';
-      phoneInput.value = '';
-      deleteBtn.classList.add('hidden');
-    }
-    clientModal.classList.add('open');
-  }
-
-  function saveClient() {
-    const name = document.getElementById('new-client-name').value.trim();
-    const phone = document.getElementById('new-client-phone').value.trim();
-
-    if (!name) {
-        alert('Имя клиента не может быть пустым.'); // Client name cannot be empty.
-        return;
-    }
-
-    if (editingClientId) {
-      const index = appState.clients.findIndex(c => c.id === editingClientId);
-      if (index !== -1) {
-        appState.clients[index] = { ...appState.clients[index], name, phone };
-      }
-    } else {
-      appState.clients.push({ id: Date.now(), name, phone });
-    }
-    saveState();
-    closeModals();
-    renderClients();
-    renderSchedule(); // Re-render schedule if a client name or phone was potentially updated
-  }
-
-  function deleteClient(id) {
-    // First, get the client name before deleting the client from the array
-    const clientToDelete = appState.clients.find(c => c.id === id);
-    const clientNameToDelete = clientToDelete ? clientToDelete.name : null;
-
-    appState.clients = appState.clients.filter(c => c.id !== id);
-    
-    // Anonymize or remove association for bookings using this client's name
-    if (clientNameToDelete) {
-        appState.bookings = appState.bookings.map(b => {
-            if (b.clientName === clientNameToDelete) {
-                return { ...b, clientName: 'Гость', phone: '' };
-            }
-            return b;
-        });
-    }
-    saveState();
-    renderClients();
-    renderSchedule(); // Refresh schedule to reflect changes
-    renderAnalytics();
-  }
-
-  function deleteClientFromModal() {
-    if (editingClientId) {
-      deleteClient(editingClientId);
-      closeModals();
-    }
-  }
-
-  function renderClients() {
-    const list = document.getElementById('clients-list');
-    list.innerHTML = appState.clients.map(c => `
-      <div class="list-item" onclick="openClientModal(${c.id})">
-        <div>
-          <div style="font-weight:600; font-size:14px;">${escapeHtml(c.name)}</div>
-          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(c.phone || 'Нет телефона')}</div>
-        </div>
-      </div>
-    `).join('') || '<div style="color:var(--hint); text-align:center; padding:12px; font-size:13px;">База клиентов пуста</div>';
-  }
-
-  function openServiceModal(serviceId = null) {
-    editingServiceId = serviceId;
-    const serviceModal = document.getElementById('modal-service');
-    const titleEl = document.getElementById('service-modal-title');
-    const titleInput = document.getElementById('new-service-title');
-    const priceInput = document.getElementById('new-service-price');
-    const deleteBtn = document.getElementById('delete-service-btn');
-
-    if (editingServiceId) {
-      titleEl.innerText = 'Редактировать услугу';
-      const service = appState.services.find(s => s.id === editingServiceId);
-      if (service) {
-        titleInput.value = service.title || '';
-        priceInput.value = service.price || 0;
-        deleteBtn.classList.remove('hidden');
-      }
-    } else {
-      titleEl.innerText = 'Новая услуга';
-      titleInput.value = '';
-      priceInput.value = '';
-      deleteBtn.classList.add('hidden');
-    }
-    serviceModal.classList.add('open');
-  }
-
-  function saveService() {
-    const title = document.getElementById('new-service-title').value.trim();
-    const price = Number(document.getElementById('new-service-price').value) || 0;
-
-    if (!title) {
-        alert('Название услуги не может быть пустым.'); // Service title cannot be empty.
-        return;
-    }
-
-    if (editingServiceId) {
-      const index = appState.services.findIndex(s => s.id === editingServiceId);
-      if (index !== -1) {
-        appState.services[index] = { ...appState.services[index], title, price };
-      }
-    } else {
-      appState.services.push({ id: Date.now(), title, price });
-    }
-    saveState();
-    closeModals();
-    renderServices();
-    renderSchedule(); // Re-render schedule if a service was potentially updated affecting displayed price/title
-  }
-
-  function deleteService(id) {
-    // First, get the service title before deleting the service from the array
-    const serviceToDelete = appState.services.find(s => s.id === id);
-    const serviceTitleToDelete = serviceToDelete ? serviceToDelete.title : null;
-
-    appState.services = appState.services.filter(s => s.id !== id);
-
-    // Update bookings where this service was used
-    if (serviceTitleToDelete) {
-        appState.bookings = appState.bookings.map(b => {
-            if (b.serviceTitle === serviceTitleToDelete) {
-                return { ...b, serviceTitle: 'Без услуги', price: 0 };
-            }
-            return b;
-        });
-    }
-    saveState();
-    renderServices();
-    renderSchedule(); // Refresh schedule to reflect changes
-    renderAnalytics();
-  }
-
-  function deleteServiceFromModal() {
-    if (editingServiceId) {
-      deleteService(editingServiceId);
-      closeModals();
-    }
-  }
-
-  function exportDataBackup() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `beauty_backup_${getTodayStr()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  }
-
-  function importDataBackup(event) {
-    const fileReader = new FileReader();
-    fileReader.onload = function(e) {
-      try {
-        const parsed = JSON.parse(e.target.result);
-        // Basic validation for the imported structure
-        if (parsed && Array.isArray(parsed.bookings) && Array.isArray(parsed.clients) && Array.isArray(parsed.services)) {
-          appState = {
-            selectedDate: parsed.selectedDate || getTodayStr(),
-            clients: parsed.clients || [],
-            services: parsed.services || [],
-            bookings: (parsed.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default for imported bookings
-          };
-          saveState();
-          alert('База успешно восстановлена!');
-          renderDaysRibbon();
-          renderSchedule();
-          renderClients();
-          renderServices();
-          renderAnalytics();
-        } else {
-          alert('Неверный формат файла бэкапа.');
-        }
-      } catch(err) {
-        alert('Ошибка при чтении файла');
-        console.error(err);
-      }
-    };
-    fileReader.readAsText(event.target.files[0]);
-    // Clear the input to allow re-importing the same file
-    event.target.value = '';
-  }
-
-  function renderAnalytics() {
-    const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
-    const totalRevenue = completedToday.reduce((sum, b) => sum + (b.price || 0), 0);
-
-    document.getElementById('today-revenue').innerText = `${totalRevenue.toFixed(2)} €`;
-    document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
-  }
-
-  function closeModals() {
-    document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
-    // Reset editing IDs
-    editingBookingId = null;
-    editingClientId = null;
-    editingServiceId = null;
-  }
-
-  function escapeHtml(str) {
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
-  // Initial load and render
-  loadState(() => {
-    renderDaysRibbon();
-    renderSchedule();
-    renderClients();
-    renderServices();
-    renderAnalytics();
-  });
-</script>
+    renderCalendar();
+  </script>
 </body>
 </html>
