@@ -42,10 +42,11 @@
       padding: 12px 16px;
       text-align: center;
       border-bottom: 0.5px solid var(--border);
+      box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow for depth, iOS-like */
     }
 
     .app-header-title {
-      font-weight: 600;
+      font-weight: 700; /* Slightly bolder for main title */
       font-size: 17px;
     }
 
@@ -122,6 +123,20 @@
       background: var(--bg);
       border-radius: var(--radius-md);
       margin-bottom: 6px;
+      transition: background 0.15s ease; /* Smooth transition on tap */
+      cursor: pointer; /* Indicate clickable */
+    }
+
+    .list-item:active {
+      background: rgba(var(--primary), 0.1); /* Subtle background on press */
+    }
+    /* For list items that are not clickable (e.g. static analytics info), remove cursor/active */
+    .list-item.static {
+        cursor: default;
+        background: var(--bg);
+    }
+    .list-item.static:active {
+        background: var(--bg);
     }
 
     .list-item:last-child { margin-bottom: 0; }
@@ -153,11 +168,22 @@
       font-size: 15px;
       margin-bottom: 10px;
       outline: none;
-      -webkit-appearance: none;
+      -webkit-appearance: none; /* For selects */
+      -moz-appearance: none; /* For selects */
+      appearance: none; /* For selects */
     }
 
     .input-field:focus, select:focus {
       border-color: var(--primary);
+    }
+
+    /* Custom arrow for selects */
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Hint color chevron */
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 16px;
+      padding-right: 30px; /* Make space for the arrow */
     }
 
     .btn {
@@ -254,6 +280,14 @@
       margin: 0 auto 14px auto;
     }
 
+    .modal-form-label {
+      font-size: 15px; /* Slightly larger than card-title */
+      font-weight: 500;
+      color: var(--text); /* Main text color, not hint */
+      margin-bottom: 8px; /* Spacing below label */
+      display: block; /* Make it block for proper spacing */
+    }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -276,7 +310,7 @@
       <div class="card">
         <div class="card-title">
           <span>Расписание</span>
-          <button class="btn btn-sm btn-secondary" onclick="openNewBookingModal()">+ Запись</button>
+          <button class="btn btn-sm btn-secondary" onclick="openBookingModal(null)">+ Запись</button>
         </div>
         <div id="schedule-list"></div>
       </div>
@@ -287,7 +321,7 @@
       <div class="card">
         <div class="card-title">
           <span>База клиентов</span>
-          <button class="btn btn-sm btn-secondary" onclick="openClientModal()">+ Клиент</button>
+          <button class="btn btn-sm btn-secondary" onclick="openClientModal(null)">+ Клиент</button>
         </div>
         <div id="clients-list"></div>
       </div>
@@ -298,7 +332,7 @@
       <div class="card">
         <div class="card-title">
           <span>Каталог услуг</span>
-          <button class="btn btn-sm btn-secondary" onclick="openServiceModal()">+ Услуга</button>
+          <button class="btn btn-sm btn-secondary" onclick="openServiceModal(null)">+ Услуга</button>
         </div>
         <div id="services-list"></div>
       </div>
@@ -348,23 +382,27 @@
   <div class="modal" id="modal-booking">
     <div class="modal-content">
       <div class="sheet-handle"></div>
-      <h3 style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Быстрая запись</h3>
+      <h3 id="booking-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Быстрая запись</h3>
       
-      <label class="card-title">Имя клиента</label>
+      <label for="booking-client-input" class="modal-form-label">Имя клиента</label>
       <input type="text" id="booking-client-input" class="input-field" placeholder="Имя клиента..." list="clients-datalist">
       <datalist id="clients-datalist"></datalist>
 
-      <label class="card-title">Телефон</label>
+      <label for="booking-phone-input" class="modal-form-label">Телефон</label>
       <input type="tel" id="booking-phone-input" class="input-field" placeholder="Телефон">
 
-      <label class="card-title">Услуга</label>
-      <select id="booking-service-select"></select>
+      <label for="booking-service-select" class="modal-form-label">Услуга</label>
+      <select id="booking-service-select" class="input-field"></select>
 
-      <label class="card-title">Время</label>
+      <label for="booking-price-input" class="modal-form-label">Цена (€)</label>
+      <input type="number" id="booking-price-input" class="input-field" placeholder="0" min="0" step="0.01">
+
+      <label for="booking-time" class="modal-form-label">Время</label>
       <input type="time" id="booking-time" class="input-field" value="10:00">
 
       <button class="btn" onclick="saveBooking()">Сохранить запись</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-booking-btn" onclick="deleteBookingFromModal()">Удалить запись</button>
     </div>
   </div>
 
@@ -372,11 +410,15 @@
   <div class="modal" id="modal-client">
     <div class="modal-content">
       <div class="sheet-handle"></div>
-      <h3 style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новый клиент</h3>
+      <h3 id="client-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новый клиент</h3>
+      <input type="hidden" id="editing-client-id">
+      <label for="new-client-name" class="modal-form-label">Имя клиента</label>
       <input type="text" id="new-client-name" class="input-field" placeholder="Имя клиента">
+      <label for="new-client-phone" class="modal-form-label">Телефон</label>
       <input type="tel" id="new-client-phone" class="input-field" placeholder="Телефон">
       <button class="btn" onclick="saveClient()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-client-btn" onclick="deleteClientFromModal()">Удалить клиента</button>
     </div>
   </div>
 
@@ -384,11 +426,15 @@
   <div class="modal" id="modal-service">
     <div class="modal-content">
       <div class="sheet-handle"></div>
-      <h3 style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новая услуга</h3>
+      <h3 id="service-modal-title" style="margin-bottom: 14px; font-size: 17px; font-weight: 600;">Новая услуга</h3>
+      <input type="hidden" id="editing-service-id">
+      <label for="new-service-title" class="modal-form-label">Название услуги</label>
       <input type="text" id="new-service-title" class="input-field" placeholder="Название услуги">
-      <input type="number" id="new-service-price" class="input-field" placeholder="Цена (€)">
+      <label for="new-service-price" class="modal-form-label">Цена (€)</label>
+      <input type="number" id="new-service-price" class="input-field" placeholder="0" min="0" step="0.01">
       <button class="btn" onclick="saveService()">Сохранить</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeModals()">Отмена</button>
+      <button class="btn btn-secondary hidden" style="margin-top: 8px; background: rgba(255, 59, 48, 0.1); color: var(--danger);" id="delete-service-btn" onclick="deleteServiceFromModal()">Удалить услугу</button>
     </div>
   </div>
 
@@ -398,10 +444,15 @@
 
   let appState = {
     selectedDate: getTodayStr(),
-    clients: [],
-    services: [],
-    bookings: []
+    clients: [], // {id, name, phone}
+    services: [], // {id, title, price}
+    bookings: [] // {id, date, time, clientName, phone, serviceTitle, price, status}
   };
+
+  // Temporary variables for editing in modals
+  let editingBookingId = null;
+  let editingClientId = null;
+  let editingServiceId = null;
 
   function saveState() {
     const serialized = JSON.stringify(appState);
@@ -426,10 +477,16 @@
       tg.CloudStorage.getItem('ba_master_state', (err, value) => {
         if (!err && value) {
           try {
-            appState = { ...appState, ...JSON.parse(value) };
+            const loadedState = JSON.parse(value);
+            appState = {
+              selectedDate: loadedState.selectedDate || getTodayStr(),
+              clients: loadedState.clients || [],
+              services: loadedState.services || [],
+              bookings: (loadedState.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default
+            };
             onComplete();
             return;
-          } catch(e) {}
+          } catch(e) { console.error("Failed to parse cloud state", e); }
         }
         loadFromLocalStorage();
         onComplete();
@@ -443,7 +500,15 @@
   function loadFromLocalStorage() {
     const localData = localStorage.getItem('ba_master_state');
     if (localData) {
-      try { appState = { ...appState, ...JSON.parse(localData) }; } catch(e) {}
+      try {
+        const loadedState = JSON.parse(localData);
+        appState = {
+          selectedDate: loadedState.selectedDate || getTodayStr(),
+          clients: loadedState.clients || [],
+          services: loadedState.services || [],
+          bookings: (loadedState.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default
+        };
+      } catch(e) { console.error("Failed to parse local storage state", e); }
     }
   }
 
@@ -472,7 +537,7 @@
     const container = document.getElementById('days-container');
     container.innerHTML = '';
     const today = new Date();
-    const wks = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+    const wks = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]; // Sun, Mon, Tue, Wed, Thu, Fri, Sat
 
     for (let i = 0; i < 14; i++) {
       const d = new Date();
@@ -506,73 +571,130 @@
 
     dayBookings.forEach(b => {
       const item = document.createElement('div');
-      item.className = 'list-item';
+      item.className = 'list-item'; // Make it clickable
+      item.onclick = () => openBookingModal(b.id); // Open for editing
       item.innerHTML = `
         <div>
           <div style="font-weight:700; color:var(--primary); font-size:14px;">${b.time || 'Без времени'}</div>
           <div style="font-weight:600; font-size:14px; margin-top:1px;">${escapeHtml(b.clientName || 'Гость')}</div>
-          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price + ' €' : ''}</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(b.serviceTitle || 'Без услуги')} ${b.price ? '• ' + b.price.toFixed(2) + ' €' : ''}</div>
         </div>
         <div style="display:flex; align-items:center;">
-          <select onchange="changeStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px;">
+          <select onchange="event.stopPropagation(); changeBookingStatus(${b.id}, this.value)" style="margin:0; font-size:12px; padding:4px 6px; border-radius:6px; background-color:var(--card-bg);">
             <option value="confirmed" ${b.status === 'confirmed' ? 'selected' : ''}>Ожидается</option>
             <option value="completed" ${b.status === 'completed' ? 'selected' : ''}>Завершено</option>
             <option value="canceled" ${b.status === 'canceled' ? 'selected' : ''}>Отменена</option>
           </select>
-          <button class="delete-btn" onclick="deleteBooking(${b.id})">&#10005;</button>
         </div>
       `;
       list.appendChild(item);
     });
   }
 
-  function changeStatus(id, newStatus) {
+  function changeBookingStatus(id, newStatus) {
     const booking = appState.bookings.find(b => b.id === id);
     if (booking) {
       booking.status = newStatus;
       saveState();
       renderSchedule();
+      renderAnalytics(); // Update analytics if status changes
     }
   }
 
-  function deleteBooking(id) {
+  function deleteBooking(id) { // Existing delete function
     appState.bookings = appState.bookings.filter(b => b.id !== id);
     saveState();
     renderSchedule();
+    renderAnalytics();
   }
 
-  function openNewBookingModal() {
+  function deleteBookingFromModal() { // New function for modal deletion
+    if (editingBookingId) {
+      deleteBooking(editingBookingId);
+      closeModals();
+    }
+  }
+
+  function openBookingModal(bookingId = null) {
+    editingBookingId = bookingId;
+    const bookingModal = document.getElementById('modal-booking');
+    const titleEl = document.getElementById('booking-modal-title');
+    const clientInput = document.getElementById('booking-client-input');
+    const phoneInput = document.getElementById('booking-phone-input');
+    const serviceSelect = document.getElementById('booking-service-select');
+    const priceInput = document.getElementById('booking-price-input');
+    const timeInput = document.getElementById('booking-time');
+    const deleteBtn = document.getElementById('delete-booking-btn');
+
+    // Populate clients datalist
     const datalist = document.getElementById('clients-datalist');
     datalist.innerHTML = appState.clients.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
 
-    const sSelect = document.getElementById('booking-service-select');
-    sSelect.innerHTML = `<option value="">-- Без услуги --</option>` + 
-      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price || 0} €)</option>`).join('');
+    // Populate services select
+    serviceSelect.innerHTML = `<option value="">-- Без услуги --</option>` + 
+      appState.services.map(s => `<option value="${s.id}">${escapeHtml(s.title)} (${s.price ? s.price.toFixed(2) : 0} €)</option>`).join('');
 
-    document.getElementById('booking-client-input').value = '';
-    document.getElementById('booking-phone-input').value = '';
-    document.getElementById('modal-booking').classList.add('open');
+    if (editingBookingId) {
+      titleEl.innerText = 'Редактировать запись';
+      const booking = appState.bookings.find(b => b.id === editingBookingId);
+      if (booking) {
+        clientInput.value = booking.clientName || '';
+        phoneInput.value = booking.phone || '';
+        serviceSelect.value = appState.services.find(s => s.title === booking.serviceTitle)?.id || '';
+        priceInput.value = booking.price || 0;
+        timeInput.value = booking.time || '10:00';
+        deleteBtn.classList.remove('hidden');
+      }
+    } else {
+      titleEl.innerText = 'Быстрая запись';
+      clientInput.value = '';
+      phoneInput.value = '';
+      serviceSelect.value = '';
+      priceInput.value = 0;
+      timeInput.value = '10:00';
+      deleteBtn.classList.add('hidden');
+    }
+
+    // Event listener to update price based on service selection
+    serviceSelect.onchange = () => {
+      const selectedService = appState.services.find(s => s.id == serviceSelect.value);
+      priceInput.value = selectedService ? selectedService.price : 0;
+    };
+
+    // Event listener to auto-fill phone from client name
+    clientInput.onchange = () => {
+      const client = appState.clients.find(c => c.name === clientInput.value.trim());
+      if (client) {
+        phoneInput.value = client.phone || '';
+      } else {
+        phoneInput.value = ''; // Clear if client not found
+      }
+    };
+
+    bookingModal.classList.add('open');
   }
 
   function saveBooking() {
-    const clientName = document.getElementById('booking-client-input').value.trim() || 'Гость';
+    const clientName = document.getElementById('booking-client-input').value.trim();
     const phone = document.getElementById('booking-phone-input').value.trim();
     const serviceId = document.getElementById('booking-service-select').value;
+    const price = Number(document.getElementById('booking-price-input').value) || 0;
     const time = document.getElementById('booking-time').value;
 
-    let serviceTitle = 'Без услуги';
-    let price = 0;
+    if (!clientName) {
+        alert('Имя клиента не может быть пустым.'); // Client name cannot be empty.
+        return;
+    }
 
+    let serviceTitle = 'Без услуги';
     if (serviceId) {
       const s = appState.services.find(serv => serv.id == serviceId);
       if (s) {
         serviceTitle = s.title;
-        price = s.price || 0;
       }
     }
 
-    appState.bookings.push({
-      id: Date.now(),
+    const newBookingData = {
       date: appState.selectedDate,
       time: time || '10:00',
       clientName: clientName,
@@ -580,77 +702,177 @@
       serviceTitle: serviceTitle,
       price: price,
       status: 'confirmed'
-    });
+    };
+
+    if (editingBookingId) {
+      const index = appState.bookings.findIndex(b => b.id === editingBookingId);
+      if (index !== -1) {
+        appState.bookings[index] = { ...appState.bookings[index], ...newBookingData };
+      }
+    } else {
+      appState.bookings.push({ id: Date.now(), ...newBookingData });
+    }
 
     saveState();
     closeModals();
     renderSchedule();
+    renderAnalytics();
   }
 
-  function openClientModal() { document.getElementById('modal-client').classList.add('open'); }
-  function saveClient() {
-    const name = document.getElementById('new-client-name').value.trim() || 'Гость';
-    const phone = document.getElementById('new-client-phone').value.trim() || 'Нет телефона';
+  function openClientModal(clientId = null) {
+    editingClientId = clientId;
+    const clientModal = document.getElementById('modal-client');
+    const titleEl = document.getElementById('client-modal-title');
+    const nameInput = document.getElementById('new-client-name');
+    const phoneInput = document.getElementById('new-client-phone');
+    const deleteBtn = document.getElementById('delete-client-btn');
 
-    appState.clients.push({ id: Date.now(), name, phone });
+    if (editingClientId) {
+      titleEl.innerText = 'Редактировать клиента';
+      const client = appState.clients.find(c => c.id === editingClientId);
+      if (client) {
+        nameInput.value = client.name || '';
+        phoneInput.value = client.phone || '';
+        deleteBtn.classList.remove('hidden');
+      }
+    } else {
+      titleEl.innerText = 'Новый клиент';
+      nameInput.value = '';
+      phoneInput.value = '';
+      deleteBtn.classList.add('hidden');
+    }
+    clientModal.classList.add('open');
+  }
+
+  function saveClient() {
+    const name = document.getElementById('new-client-name').value.trim();
+    const phone = document.getElementById('new-client-phone').value.trim();
+
+    if (!name) {
+        alert('Имя клиента не может быть пустым.'); // Client name cannot be empty.
+        return;
+    }
+
+    if (editingClientId) {
+      const index = appState.clients.findIndex(c => c.id === editingClientId);
+      if (index !== -1) {
+        appState.clients[index] = { ...appState.clients[index], name, phone };
+      }
+    } else {
+      appState.clients.push({ id: Date.now(), name, phone });
+    }
     saveState();
     closeModals();
     renderClients();
-    document.getElementById('new-client-name').value = '';
-    document.getElementById('new-client-phone').value = '';
+    renderSchedule(); // Re-render schedule if a client name or phone was potentially updated
   }
 
   function deleteClient(id) {
     appState.clients = appState.clients.filter(c => c.id !== id);
+    // Anonymize or remove association for bookings using this client's name
+    appState.bookings = appState.bookings.map(b => {
+        // This is a heuristic: if a client's name matches a booking clientName, clear it.
+        // A more robust solution would be to store client ID in bookings.
+        const deletedClient = appState.clients.find(c => c.id === id);
+        if (deletedClient && b.clientName === deletedClient.name) {
+            return { ...b, clientName: 'Гость', phone: '' };
+        }
+        return b;
+    });
     saveState();
     renderClients();
+    renderSchedule(); // Refresh schedule to reflect changes
+    renderAnalytics();
+  }
+
+  function deleteClientFromModal() {
+    if (editingClientId) {
+      deleteClient(editingClientId);
+      closeModals();
+    }
   }
 
   function renderClients() {
     const list = document.getElementById('clients-list');
     list.innerHTML = appState.clients.map(c => `
-      <div class="list-item">
+      <div class="list-item" onclick="openClientModal(${c.id})">
         <div>
           <div style="font-weight:600; font-size:14px;">${escapeHtml(c.name)}</div>
-          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(c.phone)}</div>
+          <div style="font-size:12px; color:var(--hint); margin-top:1px;">${escapeHtml(c.phone || 'Нет телефона')}</div>
         </div>
-        <button class="delete-btn" onclick="deleteClient(${c.id})">&#10005;</button>
       </div>
     `).join('') || '<div style="color:var(--hint); text-align:center; padding:12px; font-size:13px;">База клиентов пуста</div>';
   }
 
-  function openServiceModal() { document.getElementById('modal-service').classList.add('open'); }
+  function openServiceModal(serviceId = null) {
+    editingServiceId = serviceId;
+    const serviceModal = document.getElementById('modal-service');
+    const titleEl = document.getElementById('service-modal-title');
+    const titleInput = document.getElementById('new-service-title');
+    const priceInput = document.getElementById('new-service-price');
+    const deleteBtn = document.getElementById('delete-service-btn');
+
+    if (editingServiceId) {
+      titleEl.innerText = 'Редактировать услугу';
+      const service = appState.services.find(s => s.id === editingServiceId);
+      if (service) {
+        titleInput.value = service.title || '';
+        priceInput.value = service.price || 0;
+        deleteBtn.classList.remove('hidden');
+      }
+    } else {
+      titleEl.innerText = 'Новая услуга';
+      titleInput.value = '';
+      priceInput.value = '';
+      deleteBtn.classList.add('hidden');
+    }
+    serviceModal.classList.add('open');
+  }
+
   function saveService() {
-    const title = document.getElementById('new-service-title').value.trim() || 'Услуга';
+    const title = document.getElementById('new-service-title').value.trim();
     const price = Number(document.getElementById('new-service-price').value) || 0;
 
-    appState.services.push({ id: Date.now(), title, price });
+    if (!title) {
+        alert('Название услуги не может быть пустым.'); // Service title cannot be empty.
+        return;
+    }
+
+    if (editingServiceId) {
+      const index = appState.services.findIndex(s => s.id === editingServiceId);
+      if (index !== -1) {
+        appState.services[index] = { ...appState.services[index], title, price };
+      }
+    } else {
+      appState.services.push({ id: Date.now(), title, price });
+    }
     saveState();
     closeModals();
     renderServices();
-    document.getElementById('new-service-title').value = '';
-    document.getElementById('new-service-price').value = '';
+    renderSchedule(); // Re-render schedule if a service was potentially updated affecting displayed price/title
   }
 
   function deleteService(id) {
     appState.services = appState.services.filter(s => s.id !== id);
+    // Also update bookings where this service was used
+    appState.bookings = appState.bookings.map(b => {
+        const deletedService = appState.services.find(s => s.id === id);
+        if (deletedService && b.serviceTitle === deletedService.title) {
+            return { ...b, serviceTitle: 'Без услуги', price: 0 };
+        }
+        return b;
+    });
     saveState();
     renderServices();
+    renderSchedule(); // Refresh schedule to reflect changes
+    renderAnalytics();
   }
 
-  function renderServices() {
-    const list = document.getElementById('services-list');
-    list.innerHTML = appState.services.map(s => `
-      <div class="list-item">
-        <div>
-          <div style="font-weight:600; font-size:14px;">${escapeHtml(s.title)}</div>
-        </div>
-        <div style="display:flex; align-items:center;">
-          <span style="font-weight:600; color:var(--primary); font-size:14px;">${s.price || 0} €</span>
-          <button class="delete-btn" onclick="deleteService(${s.id})">&#10005;</button>
-        </div>
-      </div>
-    `).join('') || '<div style="color:var(--hint); text-align:center; padding:12px; font-size:13px;">Каталог услуг пуст</div>';
+  function deleteServiceFromModal() {
+    if (editingServiceId) {
+      deleteService(editingServiceId);
+      closeModals();
+    }
   }
 
   function exportDataBackup() {
@@ -668,41 +890,61 @@
     fileReader.onload = function(e) {
       try {
         const parsed = JSON.parse(e.target.result);
-        if (parsed && Array.isArray(parsed.bookings)) {
-          appState = parsed;
+        // Basic validation for the imported structure
+        if (parsed && Array.isArray(parsed.bookings) && Array.isArray(parsed.clients) && Array.isArray(parsed.services)) {
+          appState = {
+            selectedDate: parsed.selectedDate || getTodayStr(),
+            clients: parsed.clients || [],
+            services: parsed.services || [],
+            bookings: (parsed.bookings || []).map(b => ({ ...b, status: b.status || 'confirmed' })) // Ensure status default for imported bookings
+          };
           saveState();
           alert('База успешно восстановлена!');
           renderDaysRibbon();
           renderSchedule();
+          renderClients();
+          renderServices();
+          renderAnalytics();
         } else {
           alert('Неверный формат файла бэкапа.');
         }
       } catch(err) {
         alert('Ошибка при чтении файла');
+        console.error(err);
       }
     };
     fileReader.readAsText(event.target.files[0]);
+    // Clear the input to allow re-importing the same file
+    event.target.value = '';
   }
 
   function renderAnalytics() {
     const completedToday = appState.bookings.filter(b => b.date === getTodayStr() && b.status === 'completed');
     const totalRevenue = completedToday.reduce((sum, b) => sum + (b.price || 0), 0);
 
-    document.getElementById('today-revenue').innerText = `${totalRevenue} €`;
+    document.getElementById('today-revenue').innerText = `${totalRevenue.toFixed(2)} €`;
     document.getElementById('today-count').innerText = `Завершено записей: ${completedToday.length}`;
   }
 
   function closeModals() {
     document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+    // Reset editing IDs
+    editingBookingId = null;
+    editingClientId = null;
+    editingServiceId = null;
   }
 
   function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Initial load and render
   loadState(() => {
     renderDaysRibbon();
     renderSchedule();
+    renderClients();
+    renderServices();
+    renderAnalytics();
   });
 </script>
 </body>
