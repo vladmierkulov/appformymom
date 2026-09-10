@@ -196,6 +196,47 @@
       box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35);
     }
 
+    /* Input Field Styling */
+    .ios-input-field {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--ios-border);
+      background: var(--ios-bg-glass); /* Using glass for input background */
+      backdrop-filter: var(--ios-blur-filter);
+      -webkit-backdrop-filter: var(--ios-blur-filter);
+      border-radius: 16px;
+      font-size: 16px;
+      color: var(--ios-text-primary);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      appearance: none; /* Remove native styling for some input types */
+    }
+
+    .ios-input-field::placeholder {
+      color: var(--ios-text-secondary);
+      opacity: 0.7;
+    }
+
+    .ios-input-field:focus {
+      border-color: var(--ios-accent);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    }
+
+    /* Style for the manual time section */
+    .manual-time-input-container {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--ios-border); /* Separator */
+    }
+
+    .manual-time-label {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--ios-text-secondary);
+    }
+
     /* Main Floating CTA Button */
     .ios-btn {
       width: 100%;
@@ -235,9 +276,9 @@
 
   <div class="glass-card">
     <div class="calendar-header">
-      <button class="calendar-nav" id="prev-month">❮</button>
+      <button class="calendar-nav" id="prev-month">&#x276e;</button>
       <h2 id="month-year-label">Месяц</h2>
-      <button class="calendar-nav" id="next-month">❯</button>
+      <button class="calendar-nav" id="next-month">&#x276f;</button>
     </div>
     
     <div class="days-grid" id="days-container"></div>
@@ -247,6 +288,11 @@
     <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--ios-text-secondary);">Доступные слоты</h2>
     <div class="time-grid" id="time-container">
       <!-- Time slots will be dynamically generated here by JavaScript -->
+    </div>
+
+    <div class="manual-time-input-container">
+      <label for="custom-time-input" class="manual-time-label">Или введите свое время:</label>
+      <input type="text" id="custom-time-input" class="ios-input-field" placeholder="HH:MM" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$">
     </div>
   </div>
 
@@ -266,6 +312,8 @@
 
     // Установка иконки навигации
     document.getElementById('prev-month').innerText = '❮';
+
+    const customTimeInput = document.getElementById('custom-time-input');
 
     function renderCalendar() {
       const container = document.getElementById('days-container');
@@ -350,6 +398,7 @@
       // Clear any previously selected time and its visual state when a new date is selected
       selectedTime = null;
       document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
+      customTimeInput.value = ''; // Clear custom input field
       
       checkForm();
     }
@@ -359,8 +408,41 @@
       document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
       element.classList.add('selected');
       selectedTime = time;
+      customTimeInput.value = ''; // Clear custom input field if a slot is selected
       checkForm();
     }
+
+    function handleCustomTimeInput() {
+      const customValue = customTimeInput.value.trim();
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/; // HH:MM format (e.g., 09:30, 15:00, 23:59)
+
+      if (customValue && timeRegex.test(customValue)) {
+        // Valid custom time entered
+        selectedTime = customValue;
+        document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected')); // Deselect all pre-defined slots
+        tg.HapticFeedback.impactOccurred('light');
+      } else {
+        // Invalid or empty custom time entered
+        // If selectedTime was previously this customValue, it's no longer valid.
+        // Otherwise, don't clear if a slot is already selected.
+        if (selectedTime === customValue) {
+            selectedTime = null;
+        }
+      }
+      checkForm();
+    }
+
+    customTimeInput.addEventListener('input', handleCustomTimeInput);
+    customTimeInput.addEventListener('focus', () => {
+        // When user focuses on custom input, deselect any pre-selected slots
+        document.querySelectorAll('.time-slot').forEach(e => e.classList.remove('selected'));
+        // If selectedTime was from a slot, clear it to ensure custom input takes precedence
+        if (selectedTime && document.querySelector(`.time-slot[data-time='${selectedTime}'].selected`)) { // Added data-time for robust check
+            selectedTime = null;
+        }
+        checkForm();
+    });
+
 
     function checkForm() {
       const btn = document.getElementById('submit-btn');
