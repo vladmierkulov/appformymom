@@ -11,9 +11,12 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# Собираем файлы проекта
+# Указываем точную папку, которую деплоит Cloudflare
+TARGET_DIR = './TelegramBookingApp-v1'
+
 context = {}
-for root, dirs, files in os.walk('.'):
+# Собираем файлы только из целевой папки
+for root, dirs, files in os.walk(TARGET_DIR):
     if any(ignored in root for ignored in ['.git', 'node_modules', '.github']):
         continue
     for f in files:
@@ -27,8 +30,8 @@ for root, dirs, files in os.walk('.'):
             pass
 
 system_prompt = (
-    "You are an expert developer. "
-    "Analyze the request and codebase. "
+    "You are an expert full-stack developer. "
+    f"Analyze the user request and modify files ONLY inside '{TARGET_DIR}'. "
     "Return ONLY a raw JSON object mapping relative file paths to their full updated content. "
     "Do NOT use markdown code blocks like ```json."
 )
@@ -56,4 +59,4 @@ for file_path, new_content in files_to_update.items():
     with open(clean_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
 
-print("Files successfully updated by Gemini!")
+print("Files in TelegramBookingApp-v1 successfully updated by Gemini!")
