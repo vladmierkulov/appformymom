@@ -1,0 +1,90 @@
+name: AI Autonomous Coder
+
+on:
+  repository_dispatch:
+    types: [ai-task]
+
+jobs:
+  build-and-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai
+
+      - name: Run Gemini Code Generator
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          USER_PROMPT: ${{ github.event.client_payload.prompt }}
+        run: |
+          cat << 'EOF' > run_ai.py
+          import os
+          import json
+          from google import genai
+
+          client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+          prompt_text = os.environ["USER_PROMPT"]
+
+          # Собираем контекст всех файлов проекта
+          project_context = ""
+          for root, dirs, files in os.walk("."):
+              if ".git" in root or ".github" in root:
+                  continue
+              for file in files:
+                  path = os.path.join(root, file)
+                  try:
+                      with open(path, "r", encoding="utf-8") as f:
+                          project_context += f"\n--- FILE: {path} ---\n" + f.read()
+                  except Exception:
+                      pass
+
+          system_prompt = f"""You are a senior full-stack developer. 
+          Below is the entire codebase of the project:
+          {project_context}
+
+          Task: {prompt_text}
+
+          Instructions:
+          Return strictly a JSON array of modified/created files in this format:
+          [
+            {{"path": "relative/file/path.js", "content": "full updated file content"}},
+            ...
+          ]
+          Do NOT use markdown wrapping around JSON.
+          """
+
+          response = client.models.generate_content(
+              model="gemini-2.5-flash",
+              contents=system_prompt,
+          )
+
+          try:
+              clean_json = response.text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+              changes = json.loads(clean_json)
+              for item in changes:
+                  os.makedirs(os.path.dirname(item["path"]), exist_ok=True)
+                  with open(item["path"], "w", encoding="utf-8") as f:
+                      f.write(item["content"])
+          except Exception as e:
+              print(f"Error parsing AI response: {e}")
+              print(f"Raw response: {response.text}")
+              exit(1)
+          EOF
+          python run_ai.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action AI"
+          git config --global user.email "action@github.com"
+          git add .
+          git commit -m "feat(ai): ${{ github.event.client_payload.prompt }}" || exit 0
+          git push
