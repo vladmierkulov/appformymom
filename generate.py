@@ -1,19 +1,15 @@
 import os
 import json
-import google.generativeai as genai
+import requests
 
-api_key = os.environ.get('GEMINI_API_KEY')
-prompt_text = os.environ.get('PROMPT', 'Minor UI update')
+api_key = os.environ.get('OPENROUTER_API_KEY')
+prompt_text = os.environ.get('PROMPT', 'Minor update')
 
 if not api_key:
-    raise ValueError("GEMINI_API_KEY secret is missing!")
-
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.5-flash')
+    raise ValueError("OPENROUTER_API_KEY secret is missing!")
 
 TARGET_DIR = './TelegramBookingApp-v1'
 
-# Собираем контекст проекта
 context = {}
 for root, dirs, files in os.walk(TARGET_DIR):
     if any(ignored in root for ignored in ['.git', 'node_modules', '.github']):
@@ -28,21 +24,36 @@ for root, dirs, files in os.walk(TARGET_DIR):
         except Exception:
             pass
 
-# Расширенные скиллы: UI/UX, iOS 26 Design System, Telegram Mini App Engine
 system_prompt = (
-    "You are a Senior Lead Frontend Architect & UI/UX Specialist for Telegram Mini Apps.\n"
-    "YOUR SKILLS & DESIGN RULES:\n"
-    "1. **iOS 26/27 Aesthetics**: Always maintain Glassmorphism, CSS `backdrop-filter: blur()`, clean CSS variables, dynamic native themes, subtle micro-interactions, scale transitions (`active: scale(0.96)`), and curved borders (`border-radius: 16px - 24px`).\n"
-    "2. **Mobile UX Best Practices**: Ensure touch-friendly tap targets (minimum 44x44px), prevent rubber-band bounce breaking layout (`user-select: none`, `overflow-x: hidden`), and support dynamic dark/light theme detection via CSS variables.\n"
-    "3. **Telegram Mini App SDK**: Ensure `<script src=\"https://telegram.org/js/telegram-web-app.js\"></script>` is always in `<head>`. Call `window.Telegram.WebApp.ready()`, `expand()`, and utilize native haptic feedback (`Telegram.WebApp.HapticFeedback.impactOccurred('light')`) on button taps.\n"
-    "4. **Code Preservation**: NEVER delete existing functional features, interactive JavaScript logic, calendar components, or CSS variables unless explicitly requested. Always perform surgical code modifications.\n"
-    "5. **Clean Output**: Return changes ONLY for files inside '{TARGET_DIR}' in strict, parseable JSON format mapping file paths to complete content. No markdown wrap."
+    "You are an expert Senior Lead Frontend Architect for Telegram Mini Apps.\n"
+    "CRITICAL RULES:\n"
+    "1. Preserve the iOS Liquid Glass / Glassmorphism visual style and responsive calendar layout.\n"
+    "2. ALWAYS include Telegram SDK script and call window.Telegram.WebApp.ready().\n"
+    "3. NEVER delete working features or reset layout unless asked.\n"
+    f"4. Return changes ONLY for files inside '{TARGET_DIR}' in strict, valid JSON mapping file paths to new content.\n"
+    "5. Output ONLY raw JSON, without markdown formatting."
 )
 
-full_input = f"{system_prompt}\n\nExisting Code Base:\n{json.dumps(context)}\n\nUser Feature Request:\n{prompt_text}"
+user_message = f"Existing Code Base:\n{json.dumps(context)}\n\nUser Feature Request:\n{prompt_text}"
 
-response = model.generate_content(full_input)
-text = response.text.strip()
+# Можно использовать бесплатные модели: 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'
+response = requests.post(
+    url="https://openrouter.ai/api/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    },
+    data=json.dumps({
+        "model": "google/gemini-2.0-flash-exp:free", # Очень умная и бесплатная модель
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+    })
+)
+
+res_json = response.json()
+text = res_json['choices'][0]['message']['content'].strip()
 
 if text.startswith('```'):
     lines = text.splitlines()
@@ -56,17 +67,12 @@ try:
     files_to_update = json.loads(text)
     for file_path, new_content in files_to_update.items():
         clean_path = file_path.lstrip('./')
-        
         if not clean_path.startswith('TelegramBookingApp-v1'):
-            print(f"Skipping file outside target dir: {clean_path}")
             continue
-            
         if os.path.dirname(clean_path):
             os.makedirs(os.path.dirname(clean_path), exist_ok=True)
-            
         with open(clean_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
-            
-    print("AI safely updated the interface and logic!")
+    print("Code updated successfully via OpenRouter!")
 except Exception as e:
     print(f"Error parsing AI response: {e}")
