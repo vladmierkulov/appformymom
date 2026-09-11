@@ -3,7 +3,7 @@ import json
 import requests
 
 api_key = os.environ.get('OPENROUTER_API_KEY')
-prompt_text = os.environ.get('PROMPT', 'Minor update')
+prompt_text = os.environ.get('PROMPT', 'Standard UI update')
 
 if not api_key:
     raise ValueError("OPENROUTER_API_KEY secret is missing!")
@@ -25,18 +25,18 @@ for root, dirs, files in os.walk(TARGET_DIR):
             pass
 
 system_prompt = (
-    "You are an expert Senior Lead Frontend Architect for Telegram Mini Apps.\n"
-    "CRITICAL RULES:\n"
-    "1. Preserve the iOS Liquid Glass / Glassmorphism visual style and responsive calendar layout.\n"
-    "2. ALWAYS include Telegram SDK script and call window.Telegram.WebApp.ready().\n"
-    "3. NEVER delete working features or reset layout unless asked.\n"
-    f"4. Return changes ONLY for files inside '{TARGET_DIR}' in strict, valid JSON mapping file paths to new content.\n"
-    "5. Output ONLY raw JSON, without markdown formatting."
+    "You are a Senior Codex-level AI Developer for Telegram Mini Apps.\n"
+    "CRITICAL REQUIREMENTS:\n"
+    "1. Preserve existing iOS Glassmorphism styling and Javascript logic.\n"
+    "2. Ensure window.Telegram.WebApp.ready() is called in <head> or main script.\n"
+    "3. Apply surgical updates only; do NOT clear file content or overwrite existing layout.\n"
+    f"4. Output strictly a JSON object mapping relative file paths within '{TARGET_DIR}' to complete updated contents.\n"
+    "5. Do NOT output markdown ticks or intro text, return ONLY the raw JSON string."
 )
 
-user_message = f"Existing Code Base:\n{json.dumps(context)}\n\nUser Feature Request:\n{prompt_text}"
+user_message = f"Codebase Context:\n{json.dumps(context)}\n\nUser Change Request:\n{prompt_text}"
 
-# Можно использовать бесплатные модели: 'deepseek/deepseek-r1:free', 'meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free'
+# Вызов стандартной модели OpenAI / Codex уровня через OpenRouter
 response = requests.post(
     url="https://openrouter.ai/api/v1/chat/completions",
     headers={
@@ -44,7 +44,7 @@ response = requests.post(
         "Content-Type": "application/json",
     },
     data=json.dumps({
-        "model": "google/gemini-2.0-flash-exp:free", # Очень умная и бесплатная модель
+        "model": "openai/gpt-oss-120b:free", # Стандартная бесплатная кодинг-модель OpenAI
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
@@ -53,17 +53,19 @@ response = requests.post(
 )
 
 res_json = response.json()
-text = res_json['choices'][0]['message']['content'].strip()
-
-if text.startswith('```'):
-    lines = text.splitlines()
-    if lines[0].startswith('```'):
-        lines = lines[1:]
-    if lines and lines[-1].startswith('```'):
-        lines = lines[:-1]
-    text = '\n'.join(lines).strip()
 
 try:
+    text = res_json['choices'][0]['message']['content'].strip()
+    
+    # Очистка от возможных ```json маркдаунов
+    if text.startswith('```'):
+        lines = text.splitlines()
+        if lines[0].startswith('```'):
+            lines = lines[1:]
+        if lines and lines[-1].startswith('```'):
+            lines = lines[:-1]
+        text = '\n'.join(lines).strip()
+
     files_to_update = json.loads(text)
     for file_path, new_content in files_to_update.items():
         clean_path = file_path.lstrip('./')
@@ -73,6 +75,8 @@ try:
             os.makedirs(os.path.dirname(clean_path), exist_ok=True)
         with open(clean_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
-    print("Code updated successfully via OpenRouter!")
+            
+    print("Codex-style update finished successfully!")
 except Exception as e:
-    print(f"Error parsing AI response: {e}")
+    print(f"Error executing update: {e}")
+    print(f"Raw response: {res_json}")
