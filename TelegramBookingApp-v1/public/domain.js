@@ -119,6 +119,11 @@ export function validateBooking(fields) {
 
 export function money(amount, currency = 'RUB') {
   const value = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+  if (!currency) {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'decimal', minimumFractionDigits: Number.isInteger(value) ? 0 : 2, maximumFractionDigits: 2,
+    }).format(value);
+  }
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency', currency,
     minimumFractionDigits: Number.isInteger(value) ? 0 : 2,

@@ -9,12 +9,9 @@ const dateLabel = (value, options = { day:'numeric', month:'long' }) => parseDat
 const defaultTemplate = 'Здравствуйте, {name}! Напоминаем о вашей записи {date} в {time}.';
 const tg = window.Telegram?.WebApp;
 const connected = Boolean(tg?.initData);
-let storedCurrency = 'RUB';
-try { storedCurrency = localStorage.getItem('notebook.currency') || 'RUB'; } catch {}
 const state = {
   date: localDate(), view: 'schedule', bookings: [], loading: true, loaded: false, error: '',
   settings: {reminders_enabled: 1, reminder_template: defaultTemplate}, settingsLoaded: false,
-  currency: ['RUB','EUR','USD','BYN','UAH'].includes(storedCurrency) ? storedCurrency : 'RUB',
   busy: false, settingsDirty: false, sheetDirty: false, loadVersion: 0
 };
 const sheet = $('#sheet');
@@ -154,7 +151,7 @@ function renderSchedule() {
   }).join('');
   $$('#week button').forEach(button => button.onclick = () => selectDate(button.dataset.date));
   $('#booking-count').textContent = state.loaded ? day.length : '—';
-  $('#booking-total').textContent = state.loaded ? money(day.reduce((sum,b) => sum + Number(b.price || 0),0),state.currency) : '—';
+  $('#booking-total').textContent = state.loaded ? money(day.reduce((sum,b) => sum + Number(b.price || 0),0), '') : '—';
   $('#agenda-caption').textContent = state.loaded && day.length ? day[0].time + ' — ' + day.at(-1).time : '';
   const canAdd = state.loaded && !state.loading && !state.error && !state.busy;
   const times = suggestedTimes(state.bookings,state.date);
@@ -184,7 +181,7 @@ function renderSchedule() {
     '</div><button class="booking-card" data-id="' + escape(b.id) + '" style="--booking-accent:' + colors[index%4] + '" aria-label="' + escape(b.time + ', ' + b.name + ', открыть запись') +
     '"><span class="booking-info">' + (b.id === next?.id ? '<span class="next-label">Следующая запись</span>' : '') +
     '<span class="booking-name">' + escape(b.name) + '</span><span class="booking-subtitle">' + escape(b.phone || 'Запись клиента') + '</span></span>' +
-    (Number(b.price) > 0 ? '<span class="booking-price">' + escape(money(b.price,state.currency)) + '</span>' : '') + icon('right','chevron') + '</button></article>'
+    (Number(b.price) > 0 ? '<span class="booking-price">' + escape(money(b.price,'')) + '</span>' : '') + icon('right','chevron') + '</button></article>'
   ).join('');
   $$('#agenda .booking-card').forEach(button => button.onclick = () => openBooking(button.dataset.id));
 }
@@ -209,7 +206,6 @@ function renderClients() {
 function renderSettings() {
   $('#message-template').value = state.settings.reminder_template || defaultTemplate;
   $('#reminders').checked = Boolean(state.settings.reminders_enabled);
-  $('#currency').value = state.currency;
   $('#settings-error').textContent = '';
 }
 
@@ -258,7 +254,7 @@ function openBookingForm({id = null, time = null, client = null} = {}) {
     '<div class="field-pair"><label class="field"><span>Дата</span><input id="booking-date" name="date" type="date" required value="' + escape(b.date) + '"></label><label class="field"><span>Время</span><input id="booking-time" name="time" type="time" step="60" required value="' + escape(b.time) + '"></label></div>' +
     '<details class="optional-fields"' + (b.phone || Number(b.price) ? ' open' : '') + '><summary>Телефон и стоимость · необязательно</summary>' +
     '<label class="field"><span>Телефон</span><input id="booking-phone" name="phone" type="tel" placeholder="+7 …" value="' + escape(b.phone) + '" maxlength="40" autocomplete="tel"></label>' +
-    '<label class="field"><span>Стоимость, ' + escape({RUB:'₽',EUR:'€',USD:'$',BYN:'Br',UAH:'₴'}[state.currency]) + '</span><input id="booking-price" name="price" type="text" inputmode="decimal" placeholder="0" value="' + escape(b.price || '') + '" maxlength="14"></label></details>' +
+    '<label class="field"><span>Стоимость</span><input id="booking-price" name="price" type="text" inputmode="decimal" placeholder="0" value="' + escape(b.price || '') + '" maxlength="14"></label></details>' +
     '<p id="booking-error" class="form-error" role="alert"></p><div class="save-row"><button class="primary-button wide" id="save-booking" type="submit">' + icon('check') + 'Сохранить запись</button></div></form>');
   const form = $('#booking-form');
   const clients = groupClients(state.bookings);
@@ -354,7 +350,7 @@ function openBooking(id) {
   const phone = String(b.phone || '').replace(/[^\d+]/g,'');
   showSheet('Запись клиента',
     '<div class="detail-hero"><div class="avatar">' + escape(initials(b.name)) + '</div><h3>' + escape(b.name) + '</h3><p>' + escape(dateLabel(b.date,{day:'numeric',month:'long',year:'numeric'}) + ' · ' + b.time) + '</p>' +
-    '<div class="detail-values">' + (b.phone ? '<span>' + escape(b.phone) + '</span>' : '') + (Number(b.price) > 0 ? '<strong>' + escape(money(b.price,state.currency)) + '</strong>' : '') + '</div></div>' +
+    '<div class="detail-values">' + (b.phone ? '<span>' + escape(b.phone) + '</span>' : '') + (Number(b.price) > 0 ? '<strong>' + escape(money(b.price,'')) + '</strong>' : '') + '</div></div>' +
     '<div class="action-pair"><button id="edit-booking">' + icon('edit') + 'Изменить</button>' + (phone ? '<a href="tel:' + escape(phone) + '">' + icon('phone') + 'Позвонить</a>' : '<button id="repeat-booking">' + icon('plus') + 'Записать ещё</button>') + '</div>' +
     '<div class="message-card"><div class="section-heading"><h3>Сообщение клиенту</h3><button id="copy-message" class="icon-button copy-button" aria-label="Скопировать сообщение">' + icon('copy') + '</button></div><p id="message-text" class="message-text">' + escape(text) + '</p><p class="micro">Выберите клиента в Telegram и отправьте текст.</p><button id="share-message" class="primary-button wide">' + icon('message') + 'Отправить через Telegram</button></div>' +
     '<button id="delete-booking" class="delete-button">' + icon('trash') + 'Удалить запись</button><div id="delete-confirm"></div>');
@@ -404,7 +400,7 @@ function openClient(key) {
   if (!client) return;
   showSheet('Клиент',
     '<div class="detail-hero"><div class="avatar">' + escape(initials(client.name)) + '</div><h3>' + escape(client.name) + '</h3><p>' + escape(client.phone || 'Телефон не указан') + '</p></div><button id="book-client" class="primary-button wide">' + icon('plus') + 'Записать клиента</button><div class="section-heading" style="margin:26px 0 12px"><h3>История записей</h3><span class="muted small">' + client.records.length + '</span></div>' +
-    client.records.map(b => '<button class="history-row" data-id="' + escape(b.id) + '"><div>' + escape(dateLabel(b.date,{day:'numeric',month:'long',year:'numeric'})) + '<span>' + escape(b.time) + '</span></div><strong>' + escape(money(b.price,state.currency)) + '</strong>' + icon('right') + '</button>').join(''));
+    client.records.map(b => '<button class="history-row" data-id="' + escape(b.id) + '"><div>' + escape(dateLabel(b.date,{day:'numeric',month:'long',year:'numeric'})) + '<span>' + escape(b.time) + '</span></div><strong>' + escape(money(b.price,'')) + '</strong>' + icon('right') + '</button>').join(''));
   $('#book-client').onclick = () => openBookingForm({client});
   $$('.history-row').forEach(button => button.onclick = () => openBooking(button.dataset.id));
 }
@@ -429,13 +425,10 @@ $('#settings-form').onsubmit = async event => {
   state.busy = true; render();
   const body = {reminders_enabled:$('#reminders').checked,reminder_template:template};
   const settingsForm = $('#settings-form');
-  const savedCurrency = $('#currency').value;
   settingsForm.inert = true;
   try {
     await api('/api/settings',{method:'PUT',body:JSON.stringify(body)});
     state.settings = body;
-    state.currency = savedCurrency;
-    try { localStorage.setItem('notebook.currency',state.currency); } catch {}
     state.settingsDirty = false;
     notify('Настройки сохранены'); haptic('success');
   } catch(error) { $('#settings-error').textContent = error.message; }

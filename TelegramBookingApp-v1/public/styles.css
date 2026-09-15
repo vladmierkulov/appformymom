@@ -9,3 +9,17 @@
 /* Narrow fallback for a single custom slot. */
 .quick-times .time-chip:only-child{grid-column:1/-1}
 .booking-subtitle,.client-meta span,.detail-values span{overflow-wrap:anywhere}
+
+/* Liquid Glass navigation: one calm, floating surface instead of two competing pills. */
+.dock-wrap{bottom:calc(14px + var(--safe-bottom) + var(--content-bottom));width:min(600px,calc(100% - 28px));gap:8px;padding:6px;border:1px solid color-mix(in srgb,var(--text) 12%,transparent);border-radius:36px;background:color-mix(in srgb,var(--card) 68%,transparent);box-shadow:0 16px 42px #20352820,inset 0 1px 0 #ffffff55;backdrop-filter:blur(34px) saturate(180%);-webkit-backdrop-filter:blur(34px) saturate(180%)}
+.dock{gap:2px;padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.nav-item{min-height:52px;border-radius:28px;transition:background .2s ease,color .2s ease,transform .15s ease}
+.nav-item.active{background:color-mix(in srgb,var(--accent) 13%,transparent);box-shadow:inset 0 1px 0 #ffffff45}
+.add-button{width:56px;height:56px;border:1px solid color-mix(in srgb,var(--accent-text) 35%,transparent);background:color-mix(in srgb,var(--accent) 86%,transparent);box-shadow:0 7px 22px color-mix(in srgb,var(--accent) 34%,transparent),inset 0 1px 0 #ffffff55;backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);transition:transform .15s ease,filter .2s ease}
+.add-button:hover{filter:brightness(1.06)}
+.soft-button,.time-chip,.search-box{background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);box-shadow:inset 0 1px 0 #ffffff35}
+.sheet{background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%)}
+.sheet-header{background:color-mix(in srgb,var(--bg) 76%,transparent);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%)}
+@media(min-width:760px){.dock-wrap{width:600px}.add-button{width:auto;height:56px;padding:0 20px}}
+@media(max-width:359px){.dock-wrap{width:calc(100% - 20px);gap:5px;padding:5px}.add-button{width:52px;height:52px}.nav-item{min-height:49px}}
+@media(prefers-reduced-transparency:reduce){.dock-wrap,.add-button,.soft-button,.time-chip,.search-box,.sheet,.sheet-header{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--card)}}
