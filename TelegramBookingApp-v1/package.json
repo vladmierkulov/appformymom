@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:init": "wrangler d1 execute booking-app-db --remote --file=schema.sql"
+    "db:init": "wrangler d1 execute booking-app-db --remote --file=schema.sql",
+    "preview": "node scripts/preview.mjs",
+    "test": "node --test tests/worker.test.js tests/domain.test.js",
+    "check": "node --check public/app.js && node --check public/domain.js && node --check src/worker.js"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

@@ -1,9 +1,16 @@
-name: Deploy Telegram Mini App
+name: Verify and deploy Telegram Mini App
+
 on:
   push:
     branches: [main]
-    paths: ["TelegramBookingApp-v1/**", ".github/workflows/deploy-telegram.yml"]
+    paths:
+      - "TelegramBookingApp-v1/**"
+      - ".github/workflows/deploy-telegram.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -18,6 +25,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run check
       - run: npm test
+
   deploy:
     needs: verify
     runs-on: ubuntu-latest
