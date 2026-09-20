@@ -21,4 +21,11 @@ For a local visual check, run `npm run preview` and open `http://127.0.0.1:4173/
 
 Run `npm test` for the pure calendar helpers and Worker API tests. The CI workflow uses Node 24 because the Worker tests use the built-in SQLite adapter.
 
+## Appearance and motion
+
+- Neutral light/dark materials follow Telegram's background, section and text colors. The app keeps a blue action color, including when Telegram has custom green buttons.
+- The floating navigation has a sliding glass selection; the calendar selection, page changes, dialogs and notifications use short, interruptible transitions.
+- Reduced motion disables both CSS and JavaScript animations. Reduced transparency and unsupported backdrop blur use opaque, readable surfaces.
+- Check the local preview at 320 px and 390 px as well as desktop width. Test both themes, fast tab/date switching, keyboard focus, unsaved-form protection, saving and reload. Demo data is isolated from the production database.
+
 The bot must be started by the owner before it can send daily reminders. Telegram does not allow bots to write to arbitrary phone numbers; each client needs to send the bot `/start` if you want to message them directly. This app therefore opens a ready-made message for the owner to send.

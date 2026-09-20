@@ -17,6 +17,28 @@ const state = {
 const sheet = $('#sheet');
 let toastTimer;
 let returnFocus;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const motionByElement = new Map();
+
+function animate(element, frames, options = {}) {
+  if (!element) return;
+  motionByElement.get(element)?.cancel();
+  motionByElement.delete(element);
+  if (reducedMotion.matches || !element.animate) return;
+  const animation = element.animate(frames, {duration:380,easing:'cubic-bezier(.22,1,.36,1)',...options});
+  motionByElement.set(element, animation);
+  const cleanup = () => { if (motionByElement.get(element) === animation) motionByElement.delete(element); };
+  animation.addEventListener('finish', cleanup, {once:true});
+  animation.addEventListener('cancel', cleanup, {once:true});
+}
+function reveal(element, offset = 12) {
+  animate(element, [{opacity:0,transform:'translateY(' + offset + 'px)'},{opacity:1,transform:'translateY(0)'}]);
+}
+reducedMotion.addEventListener('change', () => {
+  if (!reducedMotion.matches) return;
+  for (const animation of motionByElement.values()) animation.cancel();
+  motionByElement.clear();
+});
 
 function safeTelegram(fn) { try { fn(); } catch { /* Older Telegram versions can lack optional APIs. */ } }
 function haptic(type = 'light') {
@@ -29,7 +51,9 @@ function syncTheme() {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   const root = document.documentElement;
   const colors = tg?.themeParams || {};
-  for (const [property, key] of [['--bg','secondary_bg_color'],['--card','bg_color'],['--text','text_color'],['--muted','hint_color'],['--accent','button_color'],['--accent-text','button_text_color'],['--danger','destructive_text_color']]) {
+  // Telegram owns the surrounding surfaces; a consistent blue accent avoids
+  // bringing the old green palette back through custom Telegram button colors.
+  for (const [property, key] of [['--bg','secondary_bg_color'],['--card','section_bg_color'],['--text','text_color'],['--muted','hint_color'],['--danger','destructive_text_color']]) {
     if (/^#[0-9a-f]{6}$/i.test(colors[key] || '')) root.style.setProperty(property, colors[key]);
     else root.style.removeProperty(property);
   }
@@ -57,6 +81,7 @@ function notify(text) {
   clearTimeout(toastTimer);
   $('#toast').textContent = text;
   $('#toast').hidden = false;
+  animate($('#toast'), [{opacity:0,transform:'translate(-50%, 8px) scale(.96)'},{opacity:1,transform:'translate(-50%, 0) scale(1)'}]);
   toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 3200);
 }
 async function api(path, options = {}) {
@@ -112,6 +137,7 @@ async function load() {
 }
 function setView(view) {
   if (!['schedule','clients','settings'].includes(view)) return;
+  const changed = state.view !== view;
   state.view = view;
   for (const name of ['schedule','clients','settings']) $('#' + name + '-view').hidden = name !== view;
   $$('.nav-item').forEach(button => {
@@ -119,13 +145,21 @@ function setView(view) {
     button.classList.toggle('active', active);
     active ? button.setAttribute('aria-current','page') : button.removeAttribute('aria-current');
   });
+  $('.dock').style.setProperty('--nav-index', ['schedule','clients','settings'].indexOf(view));
+  if (changed) reveal($('#' + view + '-view'));
   window.scrollTo({top:0, behavior:'instant'});
   syncBack();
   haptic();
 }
 function selectDate(date) {
+  if (date === state.date) return;
+  const fromKeyboard = document.activeElement?.matches('#week button');
+  const direction = date > state.date ? 1 : -1;
   state.date = date;
   render();
+  if (fromKeyboard) $('#week .is-selected')?.focus({preventScroll:true});
+  animate($('.agenda-panel'), [{opacity:0,transform:'translateX(' + (direction * 12) + 'px)'},{opacity:1,transform:'translateX(0)'}]);
+  reveal($('#quick-times'), 6);
   haptic();
 }
 function render() {
@@ -142,7 +176,9 @@ function renderSchedule() {
   $('#date-context').textContent = dateLabel(state.date,{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   $('#day-title').textContent = state.date === today ? 'Сегодня' : state.date === addDays(today,1) ? 'Завтра' : cap(dateLabel(state.date,{weekday:'long'}));
   $('#month-label').textContent = cap(dateLabel(state.date,{month:'long',year:'numeric'})).replace(' г.','');
-  $('#week').innerHTML = weekDates(state.date).map(date => {
+  const dates = weekDates(state.date);
+  $('#week').style.setProperty('--day-index', dates.indexOf(state.date));
+  $('#week').innerHTML = dates.map(date => {
     const has = state.bookings.some(b => b.date === date);
     return '<button class="week-day' + (date === state.date ? ' is-selected' : '') + (date === today ? ' is-today' : '') +
       '" data-date="' + date + '" aria-pressed="' + (date === state.date) + '" aria-label="' + dateLabel(date,{weekday:'long',day:'numeric',month:'long'}) +
@@ -175,10 +211,9 @@ function renderSchedule() {
   }
   const now = new Date().toTimeString().slice(0,5);
   const next = state.date === today ? day.find(b => b.time >= now) : null;
-  const colors = ['#a9bb8c','#bba9c9','#c7b393','#95b7b2'];
-  $('#agenda').innerHTML = day.map((b,index) =>
+  $('#agenda').innerHTML = day.map(b =>
     '<article class="booking-row' + (b.id === next?.id ? ' next-booking' : '') + '"><div class="time-column">' + escape(b.time) +
-    '</div><button class="booking-card" data-id="' + escape(b.id) + '" style="--booking-accent:' + colors[index%4] + '" aria-label="' + escape(b.time + ', ' + b.name + ', открыть запись') +
+    '</div><button class="booking-card" data-id="' + escape(b.id) + '" aria-label="' + escape(b.time + ', ' + b.name + ', открыть запись') +
     '"><span class="booking-info">' + (b.id === next?.id ? '<span class="next-label">Следующая запись</span>' : '') +
     '<span class="booking-name">' + escape(b.name) + '</span><span class="booking-subtitle">' + escape(b.phone || 'Запись клиента') + '</span></span>' +
     (Number(b.price) > 0 ? '<span class="booking-price">' + escape(money(b.price,'')) + '</span>' : '') + icon('right','chevron') + '</button></article>'
@@ -210,11 +245,13 @@ function renderSettings() {
 }
 
 function showSheet(title, html) {
-  if (!sheet.open) returnFocus = document.activeElement;
+  const wasOpen = sheet.open;
+  if (!wasOpen) returnFocus = document.activeElement;
   state.sheetDirty = false;
   $('#sheet-title').textContent = title;
   $('#sheet-content').innerHTML = html;
   if (!sheet.open) sheet.showModal();
+  if (wasOpen) reveal($('#sheet-content'), 8);
   sheet.scrollTop = 0;
   document.body.classList.add('modal-open');
   $('#dock-wrap').inert = true;
@@ -253,7 +290,7 @@ function openBookingForm({id = null, time = null, client = null} = {}) {
     '<form id="booking-form" class="booking-form"><label class="field"><span>Имя клиента</span><input id="booking-name" name="name" placeholder="Как зовут клиента?" value="' + escape(b.name) + '" maxlength="120" required autocomplete="off" enterkeyhint="next"></label><div id="name-suggestions" class="inline-suggestions"></div>' +
     '<div class="field-pair"><label class="field"><span>Дата</span><input id="booking-date" name="date" type="date" required value="' + escape(b.date) + '"></label><label class="field"><span>Время</span><input id="booking-time" name="time" type="time" step="60" required value="' + escape(b.time) + '"></label></div>' +
     '<details class="optional-fields"' + (b.phone || Number(b.price) ? ' open' : '') + '><summary>Телефон и стоимость · необязательно</summary>' +
-    '<label class="field"><span>Телефон</span><input id="booking-phone" name="phone" type="tel" placeholder="+7 …" value="' + escape(b.phone) + '" maxlength="40" autocomplete="tel"></label>' +
+    '<label class="field"><span>Телефон</span><input id="booking-phone" name="phone" type="tel" placeholder="+ код страны и номер" value="' + escape(b.phone) + '" maxlength="40" autocomplete="tel"></label>' +
     '<label class="field"><span>Стоимость</span><input id="booking-price" name="price" type="text" inputmode="decimal" placeholder="0" value="' + escape(b.price || '') + '" maxlength="14"></label></details>' +
     '<p id="booking-error" class="form-error" role="alert"></p><div class="save-row"><button class="primary-button wide" id="save-booking" type="submit">' + icon('check') + 'Сохранить запись</button></div></form>');
   const form = $('#booking-form');
@@ -316,7 +353,7 @@ function openBookingForm({id = null, time = null, client = null} = {}) {
             const found = state.bookings.find(item => item.date === body.date && item.time === body.time && item.name === body.name &&
               String(item.phone || '') === body.phone && Number(item.price || 0) === Number(body.price || 0));
             if (found) {
-              state.date = body.date; state.sheetDirty = false; closeSheet(true); render();
+              state.date = body.date; state.sheetDirty = false; state.busy = false; closeSheet(true); render();
               notify('Запись уже была сохранена'); haptic('success');
             } else {
               $('#booking-error').textContent = 'Записи с такими данными нет. Проверьте форму и сохраните ещё раз.';
