@@ -69,9 +69,6 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.65;strok
 .quick-times{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0 11px}
 .time-chip{font-size:13px;font-weight:650;min-height:44px;white-space:nowrap;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--accent);font-variant-numeric:tabular-nums}
 .time-chip:hover{border-color:var(--accent);background:var(--tint)}
-.desktop-note{display:flex;align-items:center;gap:15px;margin-top:52px;color:var(--muted);font-size:12px;line-height:1.8}
-.desktop-note strong{font-weight:450}
-.tiny-spark{font-size:38px;color:var(--accent);line-height:1}
 .agenda-heading{min-height:44px;margin-bottom:15px}
 .booking-row{display:grid;grid-template-columns:51px minmax(0,1fr);gap:14px;margin-bottom:13px}
 .time-column{font-size:14px;font-weight:600;padding-top:23px;color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
@@ -232,7 +229,6 @@ h1{font-size:34px;letter-spacing:-1.25px}
 .quick-times{margin:12px 0 8px}
 .quick-panel>.micro{font-size:10px}
 .quick-panel>.micro br{display:none}
-.desktop-note{display:none}
 .agenda-heading{min-height:30px;margin-bottom:13px}
 .agenda-heading h2{font-size:17px}
 .agenda-heading .small{font-size:11px}
@@ -425,12 +421,10 @@ button:not(:disabled):active, .action-pair a:active { transform: scale(.96); }
 }
 @media (min-width:900px) and (min-height:650px) and (orientation:landscape) {
   .calendar-panel { position: sticky; top: calc(24px + var(--safe-top) + var(--content-top)); align-self: start; }
-  .desktop-note { margin-top: 28px; }
 }
 @media (orientation:landscape) and (max-height:600px) {
   .brandbar { margin-bottom: 16px; }
   .page-heading { margin-bottom: 18px; }
-  .desktop-note { display: none; }
   .sheet { max-height: calc(100dvh - 24px); }
 }
 @media (max-width:759px) {
