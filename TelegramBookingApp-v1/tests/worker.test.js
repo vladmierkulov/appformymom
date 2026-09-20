@@ -95,6 +95,25 @@ test("missing, forged, expired, future, duplicate and malformed identities are r
   assert.equal((await api(env)).status, 401);
 });
 
+test("phone and tablet sessions share one Telegram account, including edits, settings and deletion", async t => {
+  const { env } = fixture(t);
+  const phone = signedData(1001, { query_id: "phone-session" });
+  const tablet = signedData(1001, { query_id: "tablet-session", user: JSON.stringify({ id: 1001, first_name: "Новое имя" }) });
+  const response = await api(env, "/api/bookings", { method: "POST", body: validBooking, initData: phone });
+  assert.equal(response.status, 201);
+  const { id } = await response.json();
+  assert.equal((await (await api(env, "/api/bookings", { initData: tablet })).json())[0].id, id);
+  assert.equal((await api(env, "/api/bookings/" + id, { method: "PUT", body: { ...validBooking, time: "11:30" }, initData: tablet })).status, 200);
+  assert.equal((await (await api(env, "/api/bookings", { initData: phone })).json())[0].time, "11:30");
+  const settings = { reminders_enabled: 0, reminder_template: "До встречи, {name}!" };
+  assert.equal((await api(env, "/api/settings", { method: "PUT", body: settings, initData: tablet })).status, 200);
+  assert.deepEqual(await (await api(env, "/api/settings", { initData: phone })).json(), settings);
+  assert.deepEqual(await (await api(env, "/api/bookings", { userId: 2002 })).json(), []);
+  assert.notDeepEqual(await (await api(env, "/api/settings", { userId: 2002 })).json(), settings);
+  assert.equal((await api(env, "/api/bookings/" + id, { method: "DELETE", initData: phone })).status, 200);
+  assert.deepEqual(await (await api(env, "/api/bookings", { initData: tablet })).json(), []);
+});
+
 test("small clock skew and supplementary signed Telegram fields are accepted", async t => {
   const { env } = fixture(t);
   const response = await api(env, "/api/bookings", { initData: signedData(1001, { auth_date: String(Math.floor(Date.now() / 1000) + 30), signature: "fixture-extra-signature", start_param: "calendar" }) });

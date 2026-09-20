@@ -5,6 +5,9 @@ Telegram Mini App for managing client appointments inside Telegram.
 ## What it does
 
 - Keeps appointments in a Cloudflare D1 database.
+- Uses the verified Telegram user ID, so one account sees the same appointments and settings on phone and tablet; different accounts remain isolated.
+- Refreshes online every 30 seconds while visible, on return/focus and when connectivity returns. Background refresh pauses for open dialogs, focused inputs and unsaved settings; outdated in-flight responses cannot overwrite a local save.
+- Adapts to tablet landscape with a two-column calendar/agenda layout; rotation follows Telegram and the device orientation setting.
 - Shows a calendar, day agenda, prices, phone numbers and daily totals.
 - Creates a ready-to-send Telegram message for each client; the owner taps Send.
 - Sends the owner a daily Telegram reminder about tomorrow's appointments at 10:00 UTC.
@@ -20,6 +23,8 @@ Telegram Mini App for managing client appointments inside Telegram.
 For a local visual check, run `npm run preview` and open `http://127.0.0.1:4173/__preview`. The preview starts empty, includes no sample clients, uses disposable in-memory data and never sends Telegram messages. Names and phone numbers appear only after you enter them. The phone field shows a Lithuanian `+370` placeholder; it does not save a number automatically.
 
 Run `npm test` for the pure calendar helpers and Worker API tests. The CI workflow uses Node 24 because the Worker tests use the built-in SQLite adapter.
+
+Sync requires an internet connection and an open Mini App. Failed refreshes show a warning and retain the last loaded data; this is not offline storage. When two devices edit the same appointment, the last successful save wins. Reopen from the bot if the signed Telegram session expires. No additional account or manual device pairing is needed.
 
 ## Appearance and motion
 

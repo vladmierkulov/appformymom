@@ -1,4 +1,5 @@
 import { localDate, parseDate, addDays, weekDates, monthCells, suggestedTimes, nextTime, groupClients, initials, formatMessage, validateBooking, money } from './domain.js';
+import { createBackgroundRefresh } from './sync.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -118,6 +119,7 @@ async function load() {
   const version = ++state.loadVersion;
   state.loading = true;
   state.error = '';
+  $('#sync-status').hidden = true;
   render();
   const [bookings, settings] = await Promise.allSettled([api('/api/bookings'), api('/api/settings')]);
   if (version !== state.loadVersion) return;
@@ -135,6 +137,46 @@ async function load() {
   }
   render();
 }
+function canAutoRefresh() {
+  return connected && document.visibilityState === 'visible' && !state.busy && !state.loading &&
+    !sheet.open && !state.settingsDirty && !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
+}
+const refreshInBackground = createBackgroundRefresh({
+  canRefresh: canAutoRefresh,
+  revision: () => state.loadVersion,
+  fetchSnapshot: async () => {
+    const [bookings, settings] = await Promise.all([api('/api/bookings'), api('/api/settings')]);
+    if (!Array.isArray(bookings) || !settings || typeof settings.reminder_template !== 'string') {
+      throw new Error('Не удалось проверить обновления. Попробуйте обновить записи.');
+    }
+    return {bookings, settings};
+  },
+  applySnapshot: ({bookings, settings}) => {
+    const changed = !state.loaded || !state.settingsLoaded || state.error ||
+      JSON.stringify(bookings) !== JSON.stringify(state.bookings) ||
+      JSON.stringify(settings) !== JSON.stringify(state.settings);
+    state.bookings = bookings;
+    state.settings = settings;
+    state.loaded = state.settingsLoaded = true;
+    state.error = '';
+    $('#sync-status').hidden = true;
+    if (!changed) return;
+    // Keep keyboard focus when the refreshed lists rebuild their buttons.
+    const focus = document.activeElement;
+    const key = focus?.dataset;
+    renderSettings();
+    render();
+    if (focus && !focus.isConnected) {
+      const replacement = $$('[data-id],[data-client],[data-date],[data-time]').find(el =>
+        ['id','client','date','time'].some(name => key?.[name] !== undefined && el.dataset[name] === key[name]));
+      (replacement || $('#refresh')).focus({preventScroll:true});
+    }
+  },
+  onError: error => {
+    $('#sync-status').textContent = 'Обновление приостановлено. ' + error.message;
+    $('#sync-status').hidden = false;
+  }
+});
 function setView(view) {
   if (!['schedule','clients','settings'].includes(view)) return;
   const changed = state.view !== view;
@@ -166,7 +208,7 @@ function render() {
   renderSchedule();
   renderClients();
   $('#add-booking').disabled = !state.loaded || state.busy || state.loading || Boolean(state.error);
-  $('#save-settings').disabled = !state.settingsLoaded || state.busy;
+  $('#save-settings').disabled = !state.settingsLoaded || state.busy || state.loading;
   $('#refresh').disabled = state.busy || state.loading;
   $('#refresh svg').classList.toggle('loading-indicator', state.loading);
 }
@@ -456,10 +498,10 @@ function openCalendar(month = state.date) {
 $('#settings-form').addEventListener('input', () => { state.settingsDirty = true; $('#settings-error').textContent = ''; syncBack(); });
 $('#settings-form').onsubmit = async event => {
   event.preventDefault();
-  if (state.busy || !state.settingsLoaded) return;
+  if (state.busy || state.loading || !state.settingsLoaded) return;
   const template = $('#message-template').value.trim();
   if (!template) { $('#settings-error').textContent = 'Введите текст сообщения.'; return; }
-  state.busy = true; render();
+  state.busy = true; ++state.loadVersion; render();
   const body = {reminders_enabled:$('#reminders').checked,reminder_template:template};
   const settingsForm = $('#settings-form');
   settingsForm.inert = true;
@@ -493,7 +535,12 @@ safeTelegram(() => {
   tg?.BackButton?.onClick(() => sheet.open ? closeSheet() : setView('schedule'));
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !sheet.open) renderSchedule(); });
+document.addEventListener('visibilitychange', () => { void refreshInBackground(); });
+window.addEventListener('focus', () => { void refreshInBackground(); });
+window.addEventListener('online', () => { void refreshInBackground(); });
+window.addEventListener('pageshow', () => { void refreshInBackground(); });
+sheet.addEventListener('close', () => { void refreshInBackground(); });
+setInterval(refreshInBackground, 30000);
 syncTheme();
 renderSettings();
 load();
