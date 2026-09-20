@@ -1,7 +1,7 @@
-import { localDate, parseDate, addDays, weekDates, monthCells, suggestedTimes, nextTime, groupClients, initials, formatMessage, validateBooking, money } from './domain.js';
+import { localDate, parseDate, addDays, monthCells, suggestedTimes, nextTime, groupClients, initials, formatMessage, validateBooking, money } from './domain.js';
 import { createBackgroundRefresh } from './sync.js';
 import { createFullscreenController, isWideMobileLandscape } from './fullscreen.js';
-import { bindWeekSwipe } from './swipe.js';
+import { bindDateScroll } from './swipe.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -20,7 +20,10 @@ const state = {
 const sheet = $('#sheet');
 let toastTimer;
 let returnFocus;
-let weekSwipe;
+let dateScroll;
+let stripDates = [];
+let stripPosition = 0;
+let stripStep = 0;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const motionByElement = new Map();
 
@@ -159,7 +162,7 @@ async function load() {
 }
 function canAutoRefresh() {
   return connected && document.visibilityState === 'visible' && !state.busy && !state.loading &&
-    !sheet.open && !state.settingsDirty && !weekSwipe?.active && !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
+    !sheet.open && !state.settingsDirty && !dateScroll?.active && !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
 }
 const refreshInBackground = createBackgroundRefresh({
   canRefresh: canAutoRefresh,
@@ -214,11 +217,12 @@ function setView(view) {
   haptic();
 }
 function selectDate(date) {
-  if (date === state.date) return;
+  if (date === state.date) { revealStripDate(date, true); return; }
   const fromKeyboard = document.activeElement?.matches('#week button');
   const direction = date > state.date ? 1 : -1;
   state.date = date;
   render();
+  revealStripDate(date, true);
   if (fromKeyboard) $('#week .is-selected')?.focus({preventScroll:true});
   animate($('.agenda-panel'), [{opacity:0,transform:'translateX(' + (direction * 12) + 'px)'},{opacity:1,transform:'translateX(0)'}]);
   reveal($('#quick-times'), 6);
@@ -232,28 +236,99 @@ function render() {
   $('#refresh').disabled = state.busy || state.loading;
   $('#refresh svg').classList.toggle('loading-indicator', state.loading);
 }
+// A real overflow scroller preserves the browser's touch momentum. Dates are
+// only extended after scrolling stops, never replaced while a finger is moving.
+function getStripStep() {
+  const cells = $('#week').children;
+  return cells.length > 1 && $('#week-viewport').clientWidth
+    ? cells[1].getBoundingClientRect().left - cells[0].getBoundingClientRect().left : 0;
+}
+function stripMarkup(dates) {
+  const booked = new Set(state.bookings.map(b => b.date));
+  const today = localDate();
+  return dates.map(date => '<button class="week-day' + (date === state.date ? ' is-selected' : '') +
+    (date === today ? ' is-today' : '') + '" data-date="' + date + '" tabindex="' + (date === state.date ? '0' : '-1') +
+    '" aria-pressed="' + (date === state.date) + '" aria-label="' +
+    dateLabel(date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + (booked.has(date) ? ', есть записи' : '') +
+    '"><span class="weekday">' + dateLabel(date,{weekday:'short'}) + '</span><span class="day-number">' +
+    parseDate(date).getDate() + '</span><span class="day-dot"' + (booked.has(date) ? '' : ' hidden') + '></span></button>').join('');
+}
+function buildDateStrip(date) {
+  stripDates = Array.from({length:189}, (_,i) => addDays(date,i-91));
+  $('#week').innerHTML = stripMarkup(stripDates);
+  stripStep = getStripStep();
+  stripPosition = 88;
+  $('#week-viewport').scrollLeft = stripPosition * stripStep;
+}
+function renderDateStrip() {
+  if (!stripDates.length || state.date < stripDates[0] || state.date > stripDates.at(-1)) buildDateStrip(state.date);
+  const booked = new Set(state.bookings.map(b => b.date));
+  const today = localDate();
+  // Keep the same nodes and scroll offset during booking/background updates.
+  for (const button of $('#week').children) {
+    const date = button.dataset.date, selected = date === state.date, has = booked.has(date);
+    button.classList.toggle('is-selected', selected);
+    button.classList.toggle('is-today', date === today);
+    button.setAttribute('aria-pressed', String(selected));
+    button.tabIndex = selected ? 0 : -1;
+    const dot = $('.day-dot',button);
+    if (dot.hidden === has) {
+      dot.hidden = !has;
+      button.setAttribute('aria-label', dateLabel(date,{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + (has ? ', есть записи' : ''));
+    }
+  }
+  updateStripPosition();
+}
+function updateStripPosition() {
+  const viewport = $('#week-viewport'), step = getStripStep();
+  if (!step) return;
+  // Content can introduce the page scrollbar before ResizeObserver runs.
+  // Preserve the date/fraction anchor instead of interpreting old pixels at
+  // the new width (also important when rotating a phone or tablet).
+  if (stripStep && Math.abs(step - stripStep) >= .01) viewport.scrollLeft = stripPosition * step;
+  stripStep = step;
+  stripPosition = Math.max(0, viewport.scrollLeft / step);
+  const middle = stripDates[Math.min(stripDates.length-1, Math.floor(stripPosition+3))];
+  const label = $('#month-label');
+  if (middle && label.dataset.month !== middle.slice(0,7)) {
+    label.dataset.month = middle.slice(0,7);
+    label.textContent = cap(dateLabel(middle,{month:'long',year:'numeric'})).replace(' г.','');
+  }
+}
+function revealStripDate(date, smooth = false) {
+  const viewport = $('#week-viewport'), step = getStripStep();
+  if (!step) return;
+  const index = stripDates.indexOf(date);
+  if (index < 0) return;
+  const left = index * step, right = left + $('#week').children[index].getBoundingClientRect().width;
+  if (left >= viewport.scrollLeft && right <= viewport.scrollLeft + viewport.clientWidth) return;
+  viewport.scrollTo({left:Math.max(0,(index-3)*step), behavior:smooth && !reducedMotion.matches ? 'smooth' : 'instant'});
+}
+function extendDateStrip() {
+  const viewport = $('#week-viewport'), step = getStripStep();
+  if (!step || !stripDates.length) return;
+  if (viewport.scrollLeft < step * 21) {
+    const dates = Array.from({length:91}, (_,i) => addDays(stripDates[0],i-91));
+    const anchor = $('#week').firstElementChild;
+    const before = anchor.getBoundingClientRect().left;
+    $('#week').insertAdjacentHTML('afterbegin',stripMarkup(dates));
+    stripDates.unshift(...dates);
+    // Preserve even fractional pixel positioning when prepending older dates.
+    viewport.scrollLeft += anchor.getBoundingClientRect().left - before;
+  }
+  if (viewport.scrollWidth - viewport.scrollLeft - viewport.clientWidth < step * 21) {
+    const dates = Array.from({length:91}, (_,i) => addDays(stripDates.at(-1),i+1));
+    $('#week').insertAdjacentHTML('beforeend',stripMarkup(dates));
+    stripDates.push(...dates);
+  }
+  updateStripPosition();
+}
 function renderSchedule() {
   const day = state.bookings.filter(b => b.date === state.date).sort((a,b) => a.time.localeCompare(b.time));
   const today = localDate();
   $('#date-context').textContent = dateLabel(state.date,{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
   $('#day-title').textContent = state.date === today ? 'Сегодня' : state.date === addDays(today,1) ? 'Завтра' : cap(dateLabel(state.date,{weekday:'long'}));
-  $('#month-label').textContent = cap(dateLabel(state.date,{month:'long',year:'numeric'})).replace(' г.','');
-  const dates = weekDates(state.date);
-  $('#week').style.setProperty('--day-index', dates.indexOf(state.date));
-  $('#week').innerHTML = dates.map(date => {
-    const has = state.bookings.some(b => b.date === date);
-    return '<button class="week-day' + (date === state.date ? ' is-selected' : '') + (date === today ? ' is-today' : '') +
-      '" data-date="' + date + '" aria-pressed="' + (date === state.date) + '" aria-label="' + dateLabel(date,{weekday:'long',day:'numeric',month:'long'}) +
-      (has ? ', есть записи' : '') + '"><span class="weekday">' + dateLabel(date,{weekday:'short'}) + '</span><span class="day-number">' +
-      parseDate(date).getDate() + '</span>' + (has ? '<span class="day-dot"></span>' : '') + '</button>';
-  }).join('');
-  $$('#week button').forEach(button => button.onclick = () => selectDate(button.dataset.date));
-  for (const [id, offset] of [['prev-week-preview',-7],['next-week-preview',7]]) {
-    $('#' + id).innerHTML = weekDates(addDays(state.date,offset)).map(date =>
-      '<span class="week-day"><span class="weekday">' + dateLabel(date,{weekday:'short'}) +
-      '</span><span class="day-number">' + parseDate(date).getDate() + '</span>' +
-      (state.bookings.some(b => b.date === date) ? '<span class="day-dot"></span>' : '') + '</span>').join('');
-  }
+  renderDateStrip();
   $('#booking-count').textContent = state.loaded ? day.length : '—';
   $('#booking-total').textContent = state.loaded ? money(day.reduce((sum,b) => sum + Number(b.price || 0),0), '') : '—';
   $('#agenda-caption').textContent = state.loaded && day.length ? day[0].time + ' — ' + day.at(-1).time : '';
@@ -542,21 +617,15 @@ $('#settings-form').onsubmit = async event => {
 $$('.nav-item').forEach(button => button.onclick = () => setView(button.dataset.view));
 $('#today').onclick = () => selectDate(localDate());
 $('#open-calendar').onclick = () => openCalendar();
-weekSwipe = bindWeekSwipe($('#week-viewport'), {
-  onMove: offset => {
-    motionByElement.get($('#week-track'))?.cancel();
-    $('#week-track').style.transform = 'translateX(calc(-100% + ' + offset + 'px))';
-  },
-  onFinish: (direction, offset) => {
-    const width = $('#week-track').getBoundingClientRect().width;
-    if (direction) selectDate(addDays(state.date,direction * 7));
-    $('#week-track').style.transform = '';
-    animate($('#week-track'), [
-      {transform:'translateX(calc(-100% + ' + (offset + direction * width) + 'px))'},
-      {transform:'translateX(-100%)'}
-    ], {duration:300});
-  }
+dateScroll = bindDateScroll($('#week-viewport'), {
+  onScroll: updateStripPosition,
+  onIdle: extendDateStrip
 });
+$('#week').addEventListener('click', event => {
+  const button = event.target.closest('button[data-date]');
+  if (button) selectDate(button.dataset.date);
+});
+new ResizeObserver(updateStripPosition).observe($('#week-viewport'));
 $('#week').addEventListener('keydown', event => {
   const days = {ArrowLeft:-1,ArrowRight:1,PageUp:-7,PageDown:7}[event.key];
   if (!days) return;

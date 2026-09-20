@@ -1,54 +1,78 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bindWeekSwipe } from '../public/swipe.js';
-import { addDays } from '../public/domain.js';
+import { bindDateScroll } from '../public/swipe.js';
 
 function fixture() {
   const element = new EventTarget();
-  element.getBoundingClientRect = () => ({width:350});
-  element.setPointerCapture = () => {};
-  const moves = [], finishes = [];
-  const swipe = bindWeekSwipe(element,{onMove:x=>moves.push(x),onFinish:(...args)=>finishes.push(args)});
-  function send(type,x=200,y=40,extra={}) {
+  element.scrollLeft = 500;
+  let captured = 0, idle = 0, scrolls = 0, timer;
+  element.setPointerCapture = () => { captured++; };
+  const controller = bindDateScroll(element, {
+    onScroll: () => scrolls++, onIdle: () => idle++,
+    timers: {setTimeout: fn => {timer=fn; return 1;}, clearTimeout: () => {timer=null;}}
+  });
+  function send(type, extra = {}) {
     const event = new Event(type,{cancelable:true});
     const {target,...properties} = extra;
-    Object.assign(event,{pointerId:1,isPrimary:true,button:0,clientX:x,clientY:y,detail:1,...properties});
+    Object.assign(event,{pointerId:1,pointerType:'mouse',isPrimary:true,button:0,clientX:200,clientY:40,detail:1,...properties});
     if (target) Object.defineProperty(event,'target',{value:target});
     element.dispatchEvent(event);
     return event;
   }
-  return {send,moves,finishes,swipe};
+  return {element,controller,send,flush:()=>timer?.(),get captured(){return captured;},get idle(){return idle;},get scrolls(){return scrolls;}};
 }
 
-test('touch capture transferred from a date child does not cancel the swipe', () => {
-  for (const [end,direction] of [[80,1],[320,-1]]) {
-    const f=fixture();
-    const dateChild=new EventTarget();
-    const touch={pointerType:'touch',target:dateChild};
-    f.send('pointerdown',200,40,touch);
-    f.send('pointermove',200+direction*-20,40,touch);
-    // Touch implicitly captures to the date button/span. Transferring capture
-    // to the viewport bubbles lostpointercapture from that previous child.
-    f.send('lostpointercapture',200,40,touch);
-    assert.equal(f.swipe.active,true);
-    assert.deepEqual(f.finishes,[]);
-    f.send('pointermove',end,40,{pointerType:'touch'});
-    f.send('pointerup',end,40,{pointerType:'touch'});
-    assert.deepEqual(f.finishes,[[direction,end-200]]);
-    assert.equal(f.swipe.active,false);
-    assert.equal(f.send('click').defaultPrevented,true);
+test('touch pointers are never captured or prevented; momentum remains native', () => {
+  const f=fixture();
+  f.send('touchstart');
+  assert.equal(f.controller.active,true);
+  for (const type of ['pointerdown','pointermove','lostpointercapture','pointercancel']) {
+    assert.equal(f.send(type,{pointerType:'touch',clientX:20}).defaultPrevented,false);
   }
+  assert.equal(f.captured,0);
+  assert.equal(f.element.scrollLeft,500);
+  f.send('scroll');
+  f.send('touchend',{touches:[]});
+  // Scroll events keep the strip active through inertia after touchend.
+  f.send('scroll');
+  assert.equal(f.controller.active,true);
+  f.flush();
+  assert.equal(f.idle,1);
+  assert.equal(f.controller.active,false);
 });
 
-test('left and right drags switch one week and suppress the following accidental tap', () => {
-  for (const [end,direction] of [[80,1],[320,-1]]) {
+test('scrollend cannot extend the strip while a finger remains on it', () => {
+  const f=fixture();
+  f.send('touchstart');
+  f.send('scroll');
+  f.send('scrollend');
+  f.flush();
+  assert.equal(f.idle,0);
+  f.send('touchend',{touches:[]});
+  f.flush();
+  assert.equal(f.idle,1);
+  f.send('scrollend');
+  assert.equal(f.idle,1);
+});
+
+test('trackpad scrolling notifies position and settles without any snapping', () => {
+  const f=fixture();
+  f.element.scrollLeft=621.75;
+  f.send('scroll');
+  f.send('scrollend');
+  assert.equal(f.scrolls,1);
+  assert.equal(f.idle,1);
+  assert.equal(f.element.scrollLeft,621.75);
+  assert.equal(f.controller.active,false);
+});
+
+test('mouse dragging moves continuously by pixels in either direction, not whole weeks', () => {
+  for (const x of [20,181,450,-500]) {
     const f=fixture();
     f.send('pointerdown');
-    assert.equal(f.swipe.active,true);
-    assert.equal(f.send('pointermove',end).defaultPrevented,true);
-    f.send('pointerup',end);
-    assert.deepEqual(f.finishes,[[direction,end-200]]);
-    assert.equal(f.swipe.active,false);
+    f.send('pointermove',{clientX:x});
+    assert.equal(f.element.scrollLeft,500+200-x);
+    f.send('pointerup',{clientX:x});
     assert.equal(f.send('click').defaultPrevented,true);
     f.send('pointerdown');
     f.send('pointerup');
@@ -56,51 +80,56 @@ test('left and right drags switch one week and suppress the following accidental
   }
 });
 
-test('ordinary taps and vertical scrolling do not switch weeks', () => {
+test('ordinary taps, vertical drags and secondary pointers are left alone', () => {
   const f=fixture();
+  f.send('pointerdown',{button:2});
+  f.send('pointerdown',{isPrimary:false});
+  assert.equal(f.controller.active,false);
   f.send('pointerdown');
-  f.send('pointermove',202,43);
-  f.send('pointerup',202,43);
+  f.send('pointermove',{pointerId:2,clientX:0});
+  f.send('pointerup',{pointerId:2});
+  assert.equal(f.controller.active,true);
+  f.send('pointermove',{clientX:203,clientY:100});
+  assert.equal(f.controller.active,false);
+  assert.equal(f.element.scrollLeft,500);
   assert.equal(f.send('click').defaultPrevented,false);
   f.send('pointerdown');
-  assert.equal(f.send('pointermove',205,100).defaultPrevented,false);
-  f.send('pointerup',205,100);
-  assert.deepEqual(f.finishes,[]);
-  assert.deepEqual(f.moves,[]);
+  f.send('pointerup');
+  assert.equal(f.send('click').defaultPrevented,false);
 });
 
-test('short swipes and system cancellations return to the current week', () => {
-  for(const [end,event] of [[170,'pointerup'],[80,'pointercancel'],[80,'lostpointercapture']]){
-    const f=fixture();
-    f.send('pointerdown');
-    f.send('pointermove',end);
-    f.send(event,end);
-    assert.equal(f.finishes[0][0],0);
-    assert.equal(f.swipe.active,false);
-  }
-});
-
-test('secondary pointers and right mouse button do not initiate or finish a gesture', () => {
-  const f=fixture();
-  f.send('pointerdown',200,40,{button:2});
-  assert.equal(f.swipe.active,false);
-  f.send('pointerdown',200,40,{isPrimary:false});
-  assert.equal(f.swipe.active,false);
-  f.send('pointerdown');
-  f.send('pointermove',0,40,{pointerId:2});
-  f.send('pointerup',0,40,{pointerId:2});
-  assert.deepEqual(f.moves,[]);
-  assert.equal(f.swipe.active,true);
-  f.send('pointercancel');
-  assert.equal(f.swipe.active,false);
-});
-
-test('drag distance is capped and keyboard clicks remain available after dragging', () => {
+test('capture transfer from child does not cancel mouse dragging; actual capture loss does', () => {
   const f=fixture();
   f.send('pointerdown');
-  f.send('pointermove',-1000);
-  assert.deepEqual(f.moves,[-350]);
-  f.send('pointerup',-1000);
-  assert.equal(f.send('click',0,0,{detail:0}).defaultPrevented,false);
-  assert.equal(addDays('2026-12-28',f.finishes[0][0]*7),'2027-01-04');
+  f.send('pointermove',{clientX:150});
+  f.send('lostpointercapture',{target:new EventTarget()});
+  assert.equal(f.controller.active,true);
+  f.send('pointermove',{clientX:100});
+  assert.equal(f.element.scrollLeft,600);
+  f.send('lostpointercapture');
+  assert.equal(f.controller.active,false);
+  assert.equal(f.send('click',{detail:0}).defaultPrevented,false);
+  assert.equal(f.send('click').defaultPrevented,true);
+});
+
+test('touch cancellation and leaving without a drag cannot leave refresh locked', () => {
+  const f=fixture();
+  f.send('touchstart');
+  f.send('touchcancel',{touches:[]});
+  f.flush();
+  assert.equal(f.controller.active,false);
+  f.send('pointerdown');
+  f.send('pointerleave');
+  assert.equal(f.controller.active,false);
+});
+
+test('multi-touch remains active until the last touch ends', () => {
+  const f=fixture();
+  f.send('touchstart');
+  f.send('touchend',{touches:[{}]});
+  f.flush();
+  assert.equal(f.controller.active,true);
+  f.send('touchend',{touches:[]});
+  f.flush();
+  assert.equal(f.controller.active,false);
 });
