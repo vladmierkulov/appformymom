@@ -8,6 +8,7 @@ Telegram Mini App for managing client appointments inside Telegram.
 - Uses the verified Telegram user ID, so one account sees the same appointments and settings on phone and tablet; different accounts remain isolated.
 - Refreshes online every 30 seconds while visible, on return/focus and when connectivity returns. Background refresh pauses for open dialogs, focused inputs and unsaved settings; outdated in-flight responses cannot overwrite a local save.
 - Adapts to tablet landscape with a two-column calendar/agenda layout; rotation follows Telegram and the device orientation setting.
+- Requests Telegram fullscreen (API 8.0+) once on entering a wide mobile landscape screen, even if Telegram initially presents a narrow sheet. A header button allows manual retry. Fullscreen removes the app width cap and respects Telegram safe areas; unsupported clients retain their normal window. This needs verification on an actual tablet: the local SDK preview only simulates Telegram's response.
 - Shows a calendar, day agenda, prices, phone numbers and daily totals.
 - Creates a ready-to-send Telegram message for each client; the owner taps Send.
 - Sends the owner a daily Telegram reminder about tomorrow's appointments at 10:00 UTC.

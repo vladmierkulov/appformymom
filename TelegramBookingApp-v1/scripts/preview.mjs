@@ -45,6 +45,10 @@ function sdk(url) {
     themeParams:${JSON.stringify(dark ? { bg_color: '#151719', secondary_bg_color: '#0b0d0f', text_color: '#f7f8fa', hint_color: '#92989f', link_color: '#84aefc', button_color: '#8cacfc', button_text_color: '#111820', section_bg_color: '#212427', section_header_text_color: '#92989f', subtitle_text_color: '#92989f', destructive_text_color: '#ff7474' } : { bg_color: '#f7f8fa', secondary_bg_color: '#eef0f3', text_color: '#20252c', hint_color: '#848992', link_color: '#517dea', button_color: '#517dea', button_text_color: '#ffffff', section_bg_color: '#ffffff', section_header_text_color: '#848992', subtitle_text_color: '#848992', destructive_text_color: '#d64949' })},
     safeAreaInset:{top:${top},right:0,bottom:${bottom},left:0}, contentSafeAreaInset:{top:0,right:0,bottom:0,left:0},
     viewportHeight:innerHeight, viewportStableHeight:innerHeight, isExpanded:true, isFullscreen:false,
+    requestFullscreen(){
+      if (${JSON.stringify(url.searchParams.get('fullscreen') === 'unsupported')}) { emit('fullscreenFailed',{error:'UNSUPPORTED'}); return; }
+      this.isFullscreen=true; this.contentSafeAreaInset.top=48; emit('fullscreenChanged'); emit('contentSafeAreaChanged');
+    },
     ready:noop, expand:noop, disableVerticalSwipes:noop, enableVerticalSwipes:noop, enableClosingConfirmation:noop, disableClosingConfirmation:noop,
     setHeaderColor:noop, setBackgroundColor:noop, setBottomBarColor:noop, isVersionAtLeast:()=>true,
     BackButton:button(), MainButton:button(), SecondaryButton:button(),

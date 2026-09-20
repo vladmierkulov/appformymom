@@ -1,5 +1,6 @@
 import { localDate, parseDate, addDays, weekDates, monthCells, suggestedTimes, nextTime, groupClients, initials, formatMessage, validateBooking, money } from './domain.js';
 import { createBackgroundRefresh } from './sync.js';
+import { createFullscreenController, isWideMobileLandscape } from './fullscreen.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -77,6 +78,23 @@ function syncInsets() {
 function syncBack() {
   safeTelegram(() => sheet.open || state.view !== 'schedule' ? tg?.BackButton?.show() : tg?.BackButton?.hide());
   safeTelegram(() => state.sheetDirty || state.settingsDirty ? tg?.enableClosingConfirmation?.() : tg?.disableClosingConfirmation?.());
+}
+const fullscreen = createFullscreenController({
+  webApp: tg,
+  onChange: ({fullscreen, pending}) => {
+    document.documentElement.dataset.fullscreen = String(fullscreen);
+    $('#fullscreen').hidden = !connected || fullscreen;
+    $('#fullscreen').disabled = pending;
+    syncInsets();
+  },
+  onError: notify
+});
+let fullscreenAutoAttempted = false;
+function requestTabletFullscreen() {
+  if (!connected || fullscreenAutoAttempted || !isWideMobileLandscape(tg?.platform,
+    {width:innerWidth,height:innerHeight}, window.screen)) return;
+  fullscreenAutoAttempted = true;
+  fullscreen.request();
 }
 function notify(text) {
   clearTimeout(toastTimer);
@@ -521,10 +539,12 @@ $('#open-calendar').onclick = () => openCalendar();
 $('#add-booking').onclick = () => openBookingForm();
 $('#client-search').oninput = renderClients;
 $('#refresh').onclick = load;
+$('#fullscreen').onclick = () => fullscreen.request(true);
 $('#close-sheet').onclick = () => closeSheet();
 sheet.addEventListener('cancel', event => { event.preventDefault(); closeSheet(); });
 sheet.addEventListener('click', event => { if (event.target === sheet) { const r = sheet.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeSheet(); } });
 window.visualViewport?.addEventListener('resize',syncInsets);
+window.addEventListener('resize',requestTabletFullscreen);
 safeTelegram(() => {
   tg?.ready(); tg?.expand();
   tg?.MainButton?.hide();
@@ -532,6 +552,8 @@ safeTelegram(() => {
   tg?.onEvent('safeAreaChanged',syncInsets);
   tg?.onEvent('contentSafeAreaChanged',syncInsets);
   tg?.onEvent('viewportChanged',syncInsets);
+  tg?.onEvent('fullscreenChanged',() => fullscreen.update());
+  tg?.onEvent('fullscreenFailed',event => fullscreen.failed(event));
   tg?.BackButton?.onClick(() => sheet.open ? closeSheet() : setView('schedule'));
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme);
@@ -542,5 +564,7 @@ window.addEventListener('pageshow', () => { void refreshInBackground(); });
 sheet.addEventListener('close', () => { void refreshInBackground(); });
 setInterval(refreshInBackground, 30000);
 syncTheme();
+fullscreen.update();
+requestTabletFullscreen();
 renderSettings();
 load();

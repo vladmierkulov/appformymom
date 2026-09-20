@@ -35,6 +35,12 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.65;strok
 .soft-button{padding:10px 18px;min-height:44px;border:1px solid var(--line);background:var(--glass);border-radius:24px;font-size:13px;color:var(--accent);font-weight:650}
 .schedule-layout{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(0,1.15fr);gap:clamp(24px,4vw,48px)}
 .calendar-panel,.agenda-panel{min-width:0}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:0}
+.header-actions .icon-button{margin-left:0}
+:root[data-fullscreen=true] .app-shell{max-width:none;width:100%;min-height:100dvh}
+@media(min-width:760px){
+  :root[data-fullscreen=true] .schedule-layout{grid-template-columns:minmax(280px,380px) minmax(0,1fr)}
+}
 .sync-status{padding:12px 16px;margin-bottom:20px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
 .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .month-trigger{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:650;padding:0;min-height:44px}
@@ -444,6 +450,17 @@ button:not(:disabled):active, .action-pair a:active { transform: scale(.96); }
   .nav-item { min-height: 50px; }
   .nav-item span { font-size: 9px; }
 }
+/* Fullscreen can place Telegram controls and device cutouts on either side. */
+.app-shell {
+  padding-left: max(var(--shell-gutter,36px),calc(max(env(safe-area-inset-left,0px),var(--tg-safe-area-inset-left,0px)) + var(--tg-content-safe-area-inset-left,0px)));
+  padding-right: max(var(--shell-gutter,36px),calc(max(env(safe-area-inset-right,0px),var(--tg-safe-area-inset-right,0px)) + var(--tg-content-safe-area-inset-right,0px)));
+}
+.dock-wrap {
+  --dock-edge: max(14px,calc(max(env(safe-area-inset-left,0px),var(--tg-safe-area-inset-left,0px)) + var(--tg-content-safe-area-inset-left,0px)),calc(max(env(safe-area-inset-right,0px),var(--tg-safe-area-inset-right,0px)) + var(--tg-content-safe-area-inset-right,0px)));
+  max-width: calc(100% - 2 * var(--dock-edge));
+}
+@media(max-width:759px) { .app-shell { --shell-gutter:22px; } .header-actions { margin-left:auto; } }
+@media(max-width:359px) { .app-shell { --shell-gutter:16px; } }
 /* Opaque fallbacks retain the primary button's contrast. */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
   .dock-wrap, .sheet, .sheet-header { background: var(--card); }
