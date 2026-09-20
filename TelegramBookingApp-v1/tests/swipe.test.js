@@ -11,12 +11,34 @@ function fixture() {
   const swipe = bindWeekSwipe(element,{onMove:x=>moves.push(x),onFinish:(...args)=>finishes.push(args)});
   function send(type,x=200,y=40,extra={}) {
     const event = new Event(type,{cancelable:true});
-    Object.assign(event,{pointerId:1,isPrimary:true,button:0,clientX:x,clientY:y,detail:1,...extra});
+    const {target,...properties} = extra;
+    Object.assign(event,{pointerId:1,isPrimary:true,button:0,clientX:x,clientY:y,detail:1,...properties});
+    if (target) Object.defineProperty(event,'target',{value:target});
     element.dispatchEvent(event);
     return event;
   }
   return {send,moves,finishes,swipe};
 }
+
+test('touch capture transferred from a date child does not cancel the swipe', () => {
+  for (const [end,direction] of [[80,1],[320,-1]]) {
+    const f=fixture();
+    const dateChild=new EventTarget();
+    const touch={pointerType:'touch',target:dateChild};
+    f.send('pointerdown',200,40,touch);
+    f.send('pointermove',200+direction*-20,40,touch);
+    // Touch implicitly captures to the date button/span. Transferring capture
+    // to the viewport bubbles lostpointercapture from that previous child.
+    f.send('lostpointercapture',200,40,touch);
+    assert.equal(f.swipe.active,true);
+    assert.deepEqual(f.finishes,[]);
+    f.send('pointermove',end,40,{pointerType:'touch'});
+    f.send('pointerup',end,40,{pointerType:'touch'});
+    assert.deepEqual(f.finishes,[[direction,end-200]]);
+    assert.equal(f.swipe.active,false);
+    assert.equal(f.send('click').defaultPrevented,true);
+  }
+});
 
 test('left and right drags switch one week and suppress the following accidental tap', () => {
   for (const [end,direction] of [[80,1],[320,-1]]) {

@@ -34,7 +34,11 @@ export function bindWeekSwipe(element, { onMove, onFinish }) {
   });
   element.addEventListener('pointerup', event => finish(event));
   element.addEventListener('pointercancel', event => finish(event,true));
-  element.addEventListener('lostpointercapture', event => finish(event,true));
+  element.addEventListener('lostpointercapture', event => {
+    // Touch starts with implicit capture on the date button/span. Its loss
+    // bubbles here when we capture the pointer, but the swipe is still active.
+    if (event.target === element) finish(event,true);
+  });
   element.addEventListener('click', event => {
     if (!blockClick || event.detail === 0) return;
     blockClick = false;
