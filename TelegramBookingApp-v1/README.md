@@ -1,6 +1,6 @@
 # BookingApp Telegram Mini App
 
-Free Telegram Mini App replacement for the native iOS BookingApp.
+Telegram Mini App for managing client appointments inside Telegram.
 
 ## What it does
 

@@ -1,26 +1,42 @@
-# BookingApp for iOS
+# Мой блокнот — Telegram Mini App
 
-Native SwiftUI port of the Android BookingApp. It supports calendar-based appointment management, client name/phone/price, daily income, JSON backup/import, and daily local reminders.
+Приложение для записи клиентов внутри Telegram: календарь, список клиентов, стоимость визитов и готовые сообщения.
 
-## Open in Zed
+[Открыть бота](https://t.me/calendarbookingminiappbot)
 
-Open this folder in Zed. The project is generated from `project.yml`, so the source remains simple and reviewable.
+## Что находится в репозитории
 
-## Build locally on macOS
+- `TelegramBookingApp-v1/public/` — интерфейс, стили и логика мини-аппа.
+- `TelegramBookingApp-v1/src/worker.js` — сервер и Telegram-бот на Cloudflare Workers.
+- `TelegramBookingApp-v1/schema.sql` — структура базы записей Cloudflare D1.
+- `TelegramBookingApp-v1/tests/` — проверки календаря, записей и доступа к данным.
+- `TelegramBookingApp-v1/scripts/preview.mjs` — локальный предпросмотр.
+- `.github/workflows/deploy-telegram.yml` — проверка и публикация мини-аппа.
+
+## Локальный запуск
+
+Нужен Node.js 24 или новее.
 
 ```sh
-brew install xcodegen
-xcodegen generate
-open BookingApp.xcodeproj
+cd TelegramBookingApp-v1
+npm install
+npm run preview
 ```
 
-Select your Apple development team in Xcode before installing on a physical device.
+Откройте http://127.0.0.1:4173/__preview. Предпросмотр запускается пустым, хранит введённые данные только в памяти и не связан с рабочей базой или отправкой сообщений.
 
-## GitHub Actions
+Для проверки кода:
 
-The included workflow builds the app for the iOS Simulator on GitHub's macOS runner. Push the folder to a repository and it runs automatically. A signed IPA is deliberately not produced: it needs your Apple Developer certificate, provisioning profile, and App Store Connect settings.
+```sh
+npm run check
+npm test
+```
 
-## iOS difference
+## Публикация
 
-iOS forbids apps from silently sending SMS messages. The Android app's automatic SMS worker has been replaced with a scheduled local notification and a system Share action containing the rendered reminder text.
+Изменения мини-аппа в ветке `main` запускают тесты и развёртывание в существующий Cloudflare Worker. Для публикации нужен секрет GitHub Actions `CLOUDFLARE_API_TOKEN`.
+
+[Подробная настройка бота, базы и переменных](TelegramBookingApp-v1/README.md).
+
+Рабочие записи хранятся в Cloudflare D1 и привязаны к Telegram-аккаунту. База данных и её содержимое не входят в этот репозиторий.
 
