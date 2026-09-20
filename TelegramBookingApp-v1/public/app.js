@@ -290,7 +290,7 @@ function openBookingForm({id = null, time = null, client = null} = {}) {
     '<form id="booking-form" class="booking-form"><label class="field"><span>Имя клиента</span><input id="booking-name" name="name" placeholder="Как зовут клиента?" value="' + escape(b.name) + '" maxlength="120" required autocomplete="off" enterkeyhint="next"></label><div id="name-suggestions" class="inline-suggestions"></div>' +
     '<div class="field-pair"><label class="field"><span>Дата</span><input id="booking-date" name="date" type="date" required value="' + escape(b.date) + '"></label><label class="field"><span>Время</span><input id="booking-time" name="time" type="time" step="60" required value="' + escape(b.time) + '"></label></div>' +
     '<details class="optional-fields"' + (b.phone || Number(b.price) ? ' open' : '') + '><summary>Телефон и стоимость · необязательно</summary>' +
-    '<label class="field"><span>Телефон</span><input id="booking-phone" name="phone" type="tel" placeholder="+ код страны и номер" value="' + escape(b.phone) + '" maxlength="40" autocomplete="tel"></label>' +
+    '<label class="field"><span>Телефон</span><input id="booking-phone" name="phone" type="tel" placeholder="+370 612 34567" value="' + escape(b.phone) + '" maxlength="40" autocomplete="tel"></label>' +
     '<label class="field"><span>Стоимость</span><input id="booking-price" name="price" type="text" inputmode="decimal" placeholder="0" value="' + escape(b.price || '') + '" maxlength="14"></label></details>' +
     '<p id="booking-error" class="form-error" role="alert"></p><div class="save-row"><button class="primary-button wide" id="save-booking" type="submit">' + icon('check') + 'Сохранить запись</button></div></form>');
   const form = $('#booking-form');

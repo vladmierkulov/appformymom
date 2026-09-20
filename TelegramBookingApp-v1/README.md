@@ -17,7 +17,7 @@ Free Telegram Mini App replacement for the native iOS BookingApp.
 4. Set the bot webhook to `https://YOUR-WORKER/telegram/webhook`, using the same `TELEGRAM_WEBHOOK_SECRET` as the request header secret.
 5. Add a GitHub Actions secret `CLOUDFLARE_API_TOKEN` with permission to deploy this Worker. A push to `TelegramBookingApp-v1/` runs checks and then deploys it; the same deploy can be run manually from Actions.
 
-For a local visual check, run `npm run preview` and open `http://127.0.0.1:4173/__preview`. The preview uses disposable in-memory data and never sends Telegram messages.
+For a local visual check, run `npm run preview` and open `http://127.0.0.1:4173/__preview`. The preview starts empty, includes no sample clients, uses disposable in-memory data and never sends Telegram messages. Names and phone numbers appear only after you enter them. The phone field shows a Lithuanian `+370` placeholder; it does not save a number automatically.
 
 Run `npm test` for the pure calendar helpers and Worker API tests. The CI workflow uses Node 24 because the Worker tests use the built-in SQLite adapter.
 

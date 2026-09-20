@@ -12,26 +12,8 @@ const defaultSettings = {
   reminder_template: 'Здравствуйте, {name}! Напоминаем о вашей записи {date} в {time}.',
 };
 let settings = { ...defaultSettings };
-let bookings = fixtures();
+let bookings = [];
 let failNext = false;
-
-function localDate(offset = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function fixtures() {
-  return [
-    { id: 'demo-anna', date: localDate(), time: '09:30', name: 'Анна Ковалёва', price: 45, note: 'Первый визит', duration: 60 },
-    { id: 'demo-elena', date: localDate(), time: '11:00', name: 'Елена Морозова', price: 60, note: '', duration: 60 },
-    { id: 'demo-maria', date: localDate(), time: '14:30', name: 'Мария Лебедева', price: 45, note: 'Предпочитает после обеда', duration: 60 },
-    { id: 'demo-olga', date: localDate(), time: '17:00', name: 'Ольга Соколова', price: 55, note: '', duration: 60 },
-    { id: 'demo-tomorrow', date: localDate(1), time: '10:00', name: 'Светлана Орлова', price: 50, note: '', duration: 60 },
-    { id: 'demo-yesterday', date: localDate(-1), time: '13:00', name: 'Анна Ковалёва', price: 45, note: '', duration: 60 },
-    { id: 'demo-nextweek', date: localDate(5), time: '12:30', name: 'Елена Морозова', price: 60, note: '', duration: 60 },
-  ].map(booking => ({ ...booking, phone: '', owner_id: 'local-preview', notes: booking.note, created_at: new Date().toISOString() }));
-}
 
 function json(response, status, value) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -93,10 +75,10 @@ function sdk(url) {
 function wrapper() {
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Записи — локальная проверка</title><style>
   *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#e9eaf0;color:#252833;font:14px/1.5 system-ui;display:flex;gap:48px;justify-content:center;align-items:flex-start;padding:28px}aside{width:230px;padding-top:30px}h1{font-size:26px;letter-spacing:-1px;line-height:1.2;margin:0 0 12px}p{color:#676b77}button,a{display:block;width:100%;border:1px solid #d0d3dd;border-radius:12px;padding:10px 14px;background:#f9faff;margin:8px 0;color:#2d374a;text-decoration:none;font:inherit;text-align:left;cursor:pointer}button:hover,a:hover{background:white}small{display:block;color:#70788a;margin-top:24px}iframe{display:block;width:390px;height:844px;border:0;border-radius:34px;background:#fff;box-shadow:0 20px 80px #18243821;outline:7px solid #252b36}.phone{margin:8px 0 24px}@media(max-width:760px){body{padding:18px;display:block}aside{width:min(390px,100%);padding:0;margin:0 auto 20px}aside p,aside small{display:none}aside .controls{display:flex;gap:5px;flex-wrap:wrap}button,a{width:auto;flex:1;font-size:12px;padding:8px}.phone{width:390px;max-width:100%;margin:0 auto}iframe{max-width:100%;height:844px;border-radius:24px}}
-  </style></head><body><aside><h1>Записи.<br>Локальная проверка</h1><p>Только тестовые клиенты. Данные хранятся в памяти и исчезнут после остановки сервера.</p><div class="controls"><button id="light">Светлая тема</button><button id="dark">Тёмная тема</button><button id="reset">Примеры записей</button><button id="empty">Пустой блокнот</button><button id="fail">Ошибка следующего запроса</button><a href="/" target="_blank">Открыть на всю ширину ↗</a></div><small>390 × 844 · имитация Telegram iOS<br>Внешняя отправка отключена.<br>Не подключено к Cloudflare.</small><output id="status" aria-live="polite"></output></aside><main class="phone"><iframe id="app" src="/?theme=light" title="Mini App — мобильный просмотр"></iframe></main><script>
+  </style></head><body><aside><h1>Записи.<br>Локальная проверка</h1><p>Блокнот изначально пуст. Здесь появляются только записи, которые вы добавите сами. Данные демо исчезнут после остановки сервера.</p><div class="controls"><button id="light">Светлая тема</button><button id="dark">Тёмная тема</button><button id="empty">Пустой блокнот</button><button id="fail">Ошибка следующего запроса</button><a href="/" target="_blank">Открыть на всю ширину ↗</a></div><small>390 × 844 · имитация Telegram iOS<br>Внешняя отправка отключена.<br>Не подключено к Cloudflare.</small><output id="status" aria-live="polite"></output></aside><main class="phone"><iframe id="app" src="/?theme=light" title="Mini App — мобильный просмотр"></iframe></main><script>
   const frame=document.getElementById('app');
   for(const theme of ['light','dark'])document.getElementById(theme).onclick=()=>{frame.src='/?theme='+theme;};
-  for(const mode of ['reset','empty'])document.getElementById(mode).onclick=async()=>{await fetch('/__preview/reset',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empty:mode==='empty'})});frame.src=frame.src;document.getElementById('status').textContent=mode==='empty'?'Пустой блокнот готов.':'Примеры восстановлены.';};
+  for(const mode of ['empty'])document.getElementById(mode).onclick=async()=>{await fetch('/__preview/reset',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({empty:mode==='empty'})});frame.src=frame.src;document.getElementById('status').textContent='Пустой блокнот готов.';};
   document.getElementById('fail').onclick=async()=>{await fetch('/__preview/fail-next',{method:'POST'});document.getElementById('status').textContent='Следующий запрос API вернёт ошибку 503.';};
   </script></body></html>`;
 }
@@ -111,7 +93,7 @@ const server = createServer(async (request, response) => {
       return response.end(wrapper());
     }
     if (url.pathname === '/__preview/reset' && request.method === 'POST') {
-      bookings = (await bodyOf(request)).empty ? [] : fixtures();
+      bookings = [];
       settings = { ...defaultSettings };
       failNext = false;
       return json(response, 200, { ok: true });
