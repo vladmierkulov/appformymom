@@ -1,6 +1,7 @@
 import { localDate, parseDate, addDays, weekDates, monthCells, suggestedTimes, nextTime, groupClients, initials, formatMessage, validateBooking, money } from './domain.js';
 import { createBackgroundRefresh } from './sync.js';
 import { createFullscreenController, isWideMobileLandscape } from './fullscreen.js';
+import { bindWeekSwipe } from './swipe.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -19,6 +20,7 @@ const state = {
 const sheet = $('#sheet');
 let toastTimer;
 let returnFocus;
+let weekSwipe;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const motionByElement = new Map();
 
@@ -157,7 +159,7 @@ async function load() {
 }
 function canAutoRefresh() {
   return connected && document.visibilityState === 'visible' && !state.busy && !state.loading &&
-    !sheet.open && !state.settingsDirty && !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
+    !sheet.open && !state.settingsDirty && !weekSwipe?.active && !document.activeElement?.matches('input,textarea,select,[contenteditable="true"]');
 }
 const refreshInBackground = createBackgroundRefresh({
   canRefresh: canAutoRefresh,
@@ -246,6 +248,12 @@ function renderSchedule() {
       parseDate(date).getDate() + '</span>' + (has ? '<span class="day-dot"></span>' : '') + '</button>';
   }).join('');
   $$('#week button').forEach(button => button.onclick = () => selectDate(button.dataset.date));
+  for (const [id, offset] of [['prev-week-preview',-7],['next-week-preview',7]]) {
+    $('#' + id).innerHTML = weekDates(addDays(state.date,offset)).map(date =>
+      '<span class="week-day"><span class="weekday">' + dateLabel(date,{weekday:'short'}) +
+      '</span><span class="day-number">' + parseDate(date).getDate() + '</span>' +
+      (state.bookings.some(b => b.date === date) ? '<span class="day-dot"></span>' : '') + '</span>').join('');
+  }
   $('#booking-count').textContent = state.loaded ? day.length : '—';
   $('#booking-total').textContent = state.loaded ? money(day.reduce((sum,b) => sum + Number(b.price || 0),0), '') : '—';
   $('#agenda-caption').textContent = state.loaded && day.length ? day[0].time + ' — ' + day.at(-1).time : '';
@@ -533,9 +541,29 @@ $('#settings-form').onsubmit = async event => {
 };
 $$('.nav-item').forEach(button => button.onclick = () => setView(button.dataset.view));
 $('#today').onclick = () => selectDate(localDate());
-$('#prev-week').onclick = () => selectDate(addDays(state.date,-7));
-$('#next-week').onclick = () => selectDate(addDays(state.date,7));
 $('#open-calendar').onclick = () => openCalendar();
+weekSwipe = bindWeekSwipe($('#week-viewport'), {
+  onMove: offset => {
+    motionByElement.get($('#week-track'))?.cancel();
+    $('#week-track').style.transform = 'translateX(calc(-100% + ' + offset + 'px))';
+  },
+  onFinish: (direction, offset) => {
+    const width = $('#week-track').getBoundingClientRect().width;
+    if (direction) selectDate(addDays(state.date,direction * 7));
+    $('#week-track').style.transform = '';
+    animate($('#week-track'), [
+      {transform:'translateX(calc(-100% + ' + (offset + direction * width) + 'px))'},
+      {transform:'translateX(-100%)'}
+    ], {duration:300});
+  }
+});
+$('#week').addEventListener('keydown', event => {
+  const days = {ArrowLeft:-1,ArrowRight:1,PageUp:-7,PageDown:7}[event.key];
+  if (!days) return;
+  event.preventDefault();
+  const date = document.activeElement?.dataset.date || state.date;
+  selectDate(addDays(date,days));
+});
 $('#add-booking').onclick = () => openBookingForm();
 $('#client-search').oninput = renderClients;
 $('#refresh').onclick = load;

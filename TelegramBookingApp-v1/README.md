@@ -10,6 +10,7 @@ Telegram Mini App for managing client appointments inside Telegram.
 - Adapts to tablet landscape with a two-column calendar/agenda layout; rotation follows Telegram and the device orientation setting.
 - Requests Telegram fullscreen (API 8.0+) once on entering a wide mobile landscape screen, even if Telegram initially presents a narrow sheet. A header button allows manual retry. Fullscreen removes the app width cap and respects Telegram safe areas; unsupported clients retain their normal window. This needs verification on an actual tablet: the local SDK preview only simulates Telegram's response.
 - Shows a calendar, day agenda, prices, phone numbers and daily totals.
+- The home date strip follows horizontal finger/mouse drags and changes weeks on release. Vertical scrolling and date taps stay native. The visible Calendar button opens a full month picker; the selected date is used by the next booking. Keyboard users can use left/right arrows or Page Up/Down on a date button.
 - Creates a ready-to-send Telegram message for each client; the owner taps Send.
 - Sends the owner a daily Telegram reminder about tomorrow's appointments at 10:00 UTC.
 

@@ -42,12 +42,15 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.65;strok
   :root[data-fullscreen=true] .schedule-layout{grid-template-columns:minmax(280px,380px) minmax(0,1fr)}
 }
 .sync-status{padding:12px 16px;margin-bottom:20px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
-.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .month-trigger{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:650;padding:0;min-height:44px}
 .month-trigger svg{width:14px;height:14px;color:var(--muted)}
-.week-arrows{display:flex;gap:0}
-.week-arrows .icon-button{width:36px;height:44px}
-.week-arrows svg{width:17px;height:17px}
+.calendar-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;flex-shrink:0}
+.calendar-button svg{width:17px;height:17px}
+.week-viewport{overflow:hidden;touch-action:pan-y pinch-zoom;user-select:none;padding:8px 0;margin:-8px 0;cursor:grab}
+.week-viewport:active{cursor:grabbing}
+.week-track{display:grid;grid-template-columns:repeat(3,100%);transform:translateX(-100%)}
+.week-preview::before{display:none}
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .week-day{position:relative;min-width:0;border-radius:20px;min-height:77px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .week-day .weekday{font-size:10px;color:var(--muted);font-weight:500}
